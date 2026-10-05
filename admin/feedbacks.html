@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opiniones de los usuarios | Panel de Administración | ClickSense RP</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/src/assets/admin.css">
+
+    <!-- Estilos específicos para la inmersión 3D del Acceso Denegado y el panel de opiniones -->
+    <style>
+        :root {
+            --tk-bg-card: var(--bg-card, #130d1c);
+            --tk-border: var(--border-color, rgba(239, 68, 68, 0.2));
+            --tk-muted: var(--text-muted, #9ca3af);
+            --tk-accent: var(--accent-red, #ef4444);
+            --adm-green: #10b981;
+            --adm-purple: #a855f7;
+            --adm-pink: #f472b6;
+            --adm-font-title: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Foco visible al navegar con teclado */
+        :where(a, button, select, [tabindex]):focus-visible {
+            outline: 2px solid var(--adm-pink);
+            outline-offset: 3px;
+        }
+
+        /* ======================================================== */
+        /* MÁXIMA ANIMACIÓN 3D E INMERSIÓN - ACCESO DENEGADO        */
+        /* ======================================================== */
+
+        @keyframes entry3DExplosion {
+            0% { opacity: 0; transform: scale(0.7) translateZ(-300px) rotateX(35deg); }
+            100% { opacity: 1; transform: scale(1) translateZ(0px) rotateX(0deg); }
+        }
+
+        @keyframes neonCycle3D {
+            0% { border-color: rgba(239, 68, 68, 0.6); box-shadow: 0 30px 100px rgba(0,0,0,0.95), 0 0 50px rgba(239, 68, 68, 0.25), inset 0 0 25px rgba(239, 68, 68, 0.15); }
+            33% { border-color: rgba(168, 85, 247, 0.6); box-shadow: 0 30px 100px rgba(0,0,0,0.95), 0 0 50px rgba(168, 85, 247, 0.3), inset 0 0 25px rgba(168, 85, 247, 0.15); }
+            66% { border-color: rgba(236, 72, 153, 0.6); box-shadow: 0 30px 100px rgba(0,0,0,0.95), 0 0 50px rgba(236, 72, 153, 0.3), inset 0 0 25px rgba(236, 72, 153, 0.15); }
+            100% { border-color: rgba(239, 68, 68, 0.6); box-shadow: 0 30px 100px rgba(0,0,0,0.95), 0 0 50px rgba(239, 68, 68, 0.25), inset 0 0 25px rgba(239, 68, 68, 0.15); }
+        }
+
+        @keyframes liquidShimmer3D {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes radarSpin3D {
+            0% { transform: rotate(0deg) rotateX(10deg); }
+            100% { transform: rotate(360deg) rotateX(10deg); }
+        }
+
+        @keyframes pulseCore3D {
+            0%, 100% { transform: scale(1) translateZ(40px); filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.7)); }
+            50% { transform: scale(1.1) translateZ(60px); filter: drop-shadow(0 0 40px rgba(239, 68, 68, 1)); }
+        }
+
+        @keyframes bgFloatingOrb1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(80px, -60px) scale(1.3); }
+        }
+
+        @keyframes bgFloatingOrb2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-90px, 70px) scale(1.4); }
+        }
+
+        /* Pantalla completa. Se muestra con display:flex desde el script.
+           Con "margin: auto" en la tarjeta queda centrada y, si la ventana es baja,
+           se puede desplazar sin que se corte la parte de arriba. */
+        .denied-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            padding: 24px;
+            box-sizing: border-box;
+            background: radial-gradient(circle at 50% 25%, #160a2b 0%, #040207 92%);
+            font-family: var(--adm-font-title);
+            overflow-x: hidden;
+            overflow-y: auto;
+            perspective: 1600px;
+        }
+
+        /* Orbes lumínicos de fondo */
+        .denied-orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .denied-orb-1 {
+            top: 10vh; left: 15vw; width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.09) 0%, transparent 70%);
+            animation: bgFloatingOrb1 9s infinite ease-in-out;
+        }
+        .denied-orb-2 {
+            bottom: 10vh; right: 15vw; width: 450px; height: 450px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.09) 0%, transparent 70%);
+            animation: bgFloatingOrb2 11s infinite ease-in-out;
+        }
+
+        /* Tarjeta principal 3D interactiva (se inclina siguiendo el ratón).
+           La animación de entrada usa "backwards": al terminar suelta el transform
+           y así la inclinación con el ratón puede aplicarse. */
+        .denied-card {
+            position: relative;
+            z-index: 2;
+            margin: auto;
+            width: 100%;
+            max-width: 660px;
+            box-sizing: border-box;
+            padding: 56px 46px 48px;
+            text-align: center;
+            border-radius: 34px;
+            border: 2px solid rgba(239, 68, 68, 0.6);
+            background: linear-gradient(155deg, rgba(24, 15, 40, 0.97) 0%, rgba(8, 5, 14, 0.99) 100%);
+            backdrop-filter: blur(30px);
+            transform-style: preserve-3d;
+            will-change: transform;
+            transition: transform 0.15s cubic-bezier(0.03, 0.98, 0.52, 0.99);
+            animation: entry3DExplosion 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards, neonCycle3D 7s infinite linear;
+        }
+
+        .denied-top-glow {
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%) translateZ(30px);
+            width: 200px;
+            height: 5px;
+            background: linear-gradient(90deg, transparent, #ec4899, #8b5cf6, transparent);
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 0 25px #ec4899;
+        }
+
+        .denied-tag {
+            transform: translateZ(25px);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(239, 68, 68, 0.14);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            padding: 7px 20px;
+            border-radius: 20px;
+            color: #f87171;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            margin-bottom: 44px;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.2);
+        }
+
+        .denied-emblem {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-style: preserve-3d;
+            transform: translateZ(50px);
+        }
+        .denied-ring {
+            position: absolute;
+            border-radius: 50%;
+        }
+        .denied-ring-1 {
+            inset: -8px;
+            border: 2px dashed rgba(236, 72, 153, 0.5);
+            animation: radarSpin3D 10s linear infinite;
+        }
+        .denied-ring-2 {
+            inset: -18px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            animation: radarSpin3D 15s linear infinite reverse;
+        }
+        .denied-core {
+            width: 104px;
+            height: 104px;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(168, 85, 247, 0.12));
+            color: #f87171;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            border: 1px solid rgba(239, 68, 68, 0.7);
+            animation: pulseCore3D 3s infinite ease-in-out;
+        }
+
+        .denied-title {
+            transform: translateZ(40px);
+            margin: 0 0 14px;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 15%, #f472b6 45%, #c084fc 75%, #fff 100%);
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: liquidShimmer3D 4s linear infinite;
+        }
+
+        .denied-text {
+            transform: translateZ(30px);
+            color: #94a3b8;
+            font-size: 16px;
+            line-height: 1.7;
+            max-width: 550px;
+            margin: 0 auto 34px;
+        }
+        .denied-flag {
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.18);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+
+        .denied-options {
+            transform: translateZ(35px);
+            transform-style: preserve-3d;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            text-align: left;
+            margin-bottom: 38px;
+        }
+        .denied-option {
+            --opt: 168, 85, 247;
+            background: rgba(15, 10, 28, 0.9);
+            border: 1px solid rgba(var(--opt), 0.3);
+            border-radius: 18px;
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: border-color 0.25s ease, transform 0.25s ease, background 0.25s ease;
+        }
+        .denied-option.is-blue { --opt: 59, 130, 246; }
+        .denied-option:hover {
+            border-color: rgba(var(--opt), 0.7);
+            background: rgba(22, 16, 44, 0.95);
+            transform: translateZ(10px) translateX(6px);
+        }
+        .denied-option-icon {
+            width: 44px;
+            height: 44px;
+            flex-shrink: 0;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #c084fc;
+            background: rgba(var(--opt), 0.18);
+            border: 1px solid rgba(var(--opt), 0.45);
+            box-shadow: 0 0 20px rgba(var(--opt), 0.25);
+        }
+        .denied-option.is-blue .denied-option-icon { color: #60a5fa; }
+        .denied-option-text {
+            font-size: 14.5px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+        .denied-option-text > strong:first-child {
+            color: #fff;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .denied-option-text .is-owner { color: var(--adm-pink); }
+
+        .denied-cta {
+            transform: translateZ(60px);
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: #fff;
+            text-decoration: none;
+            padding: 18px 42px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 15px 40px rgba(236, 72, 153, 0.5);
+            transition: transform 0.25s ease, filter 0.25s ease, box-shadow 0.25s ease;
+        }
+        .denied-cta:hover {
+            transform: translateZ(75px) scale(1.04);
+            filter: brightness(1.15);
+            box-shadow: 0 22px 55px rgba(236, 72, 153, 0.7);
+        }
+
+        @media (max-width: 600px) {
+            .denied-screen { padding: 16px; }
+            .denied-card { padding: 42px 22px 34px; border-radius: 26px; }
+            .denied-tag { font-size: 11px; letter-spacing: 1.2px; padding: 7px 14px; margin-bottom: 40px; }
+            .denied-title { font-size: 26px; }
+            .denied-text { font-size: 15px; margin-bottom: 28px; }
+            .denied-option { padding: 16px; gap: 14px; }
+            .denied-cta { padding: 16px 26px; font-size: 15px; }
+        }
+
+        /* ======================================================== */
+        /* CABECERA DEL PANEL                                        */
+        /* ======================================================== */
+
+        .top-btn.adm-back-btn {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color, rgba(239, 68, 68, 0.2));
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13.5px;
+            font-weight: 600;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .top-btn.adm-back-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(239, 68, 68, 0.45);
+            transform: translateX(-2px);
+        }
+
+        .adm-welcome-icon {
+            background: rgba(239, 68, 68, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid rgba(239, 68, 68, 0.4);
+            flex-shrink: 0;
+            font-size: 24px;
+            color: #ef4444;
+        }
+        .adm-welcome-title {
+            color: #fff;
+            margin: 0 0 4px;
+            font-size: 21px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            font-family: var(--adm-font-title);
+        }
+        .adm-welcome-text {
+            margin: 0;
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: var(--tk-muted);
+        }
+
+        /* Aviso de acceso concedido: una franja discreta en lugar de una tarjeta grande */
+        .admin-card.adm-access-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(16, 185, 129, 0.06);
+            border: 1px solid rgba(16, 185, 129, 0.28);
+            border-radius: 14px;
+            padding: 16px 20px;
+        }
+        .adm-access-icon {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--adm-green);
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+        .adm-access-card h3 {
+            margin: 0 0 2px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            font-family: var(--adm-font-title);
+        }
+        .adm-access-card p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--tk-muted);
+        }
+        .adm-access-card code,
+        .tk-toolbar-title code {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 1px 6px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #e5e7eb;
+        }
+
+        /* ======================================================== */
+        /* TARJETA DE ACCESO A LA GESTIÓN DE NOVEDADES               */
+        /* ======================================================== */
+        .nv-admin-link {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-top: 20px;
+            padding: 22px 25px;
+            background: var(--tk-bg-card);
+            border: 1px solid var(--tk-border);
+            border-radius: 14px;
+            text-decoration: none;
+            color: #fff;
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nv-admin-link:hover,
+        .nv-admin-link:focus-visible {
+            transform: translateY(-3px);
+            border-color: rgba(236, 72, 153, 0.6);
+            box-shadow: 0 12px 32px rgba(236, 72, 153, 0.22);
+        }
+
+        .nv-admin-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #f472b6;
+            background: rgba(236, 72, 153, 0.15);
+            border: 1px solid rgba(236, 72, 153, 0.4);
+            flex-shrink: 0;
+        }
+
+        .nv-admin-link h3 { font-size: 16px; margin: 0 0 4px; font-family: var(--adm-font-title); }
+        .nv-admin-link p { font-size: 13px; margin: 0; line-height: 1.5; color: var(--tk-muted); }
+
+        .nv-admin-arrow {
+            margin-left: auto;
+            color: var(--tk-muted);
+            transition: transform 0.25s ease, color 0.25s ease;
+        }
+
+        .nv-admin-link:hover .nv-admin-arrow,
+        .nv-admin-link:focus-visible .nv-admin-arrow {
+            transform: translateX(6px);
+            color: #f472b6;
+        }
+
+        /* ======================================================== */
+        /* OPINIONES DE LOS USUARIOS (admin/feedbacks.html)          */
+        /* Todo lo propio de esta página lleva el prefijo "fbk-".    */
+        /* ======================================================== */
+        .fbk-card {
+            background: var(--tk-bg-card);
+            border: 1px solid var(--tk-border);
+            border-radius: 14px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .main-content [hidden] { display: none !important; }
+
+        /* ---------- Resumen: nota media, reparto por estrellas y datos ---------- */
+        .fbk-resumen {
+            display: grid;
+            grid-template-columns: minmax(190px, auto) minmax(0, 1fr) minmax(170px, auto);
+            gap: 30px;
+            align-items: center;
+            background:
+                radial-gradient(120% 160% at 0% 0%, rgba(251, 191, 36, 0.10), transparent 55%),
+                var(--tk-bg-card);
+        }
+        .fbk-media { text-align: center; }
+        .fbk-media-num {
+            display: block;
+            font-family: var(--adm-font-title);
+            font-size: 58px;
+            font-weight: 800;
+            line-height: 1;
+            color: #fff;
+            font-variant-numeric: tabular-nums;
+        }
+        /* Cinco estrellas grises y, encima, las doradas recortadas a la nota media */
+        .fbk-media-estrellas { position: relative; display: inline-block; margin-top: 8px; font-size: 24px; letter-spacing: 4px; line-height: 1; color: rgba(255, 255, 255, 0.14); white-space: nowrap; }
+        .fbk-media-estrellas span { position: absolute; left: 0; top: 0; height: 100%; width: 0; overflow: hidden; color: #fbbf24; text-shadow: 0 0 12px rgba(251, 191, 36, 0.5); transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1); }
+        .fbk-media-total { display: block; margin-top: 8px; font-size: 12.5px; font-weight: 600; color: var(--tk-muted); }
+
+        .fbk-barras { display: flex; flex-direction: column; gap: 5px; }
+        .fbk-barra {
+            display: grid; grid-template-columns: 42px minmax(0, 1fr) 34px; align-items: center; gap: 12px;
+            padding: 5px 8px; border: 1px solid transparent; border-radius: 9px; background: transparent; cursor: pointer;
+            color: var(--tk-muted); font-family: inherit; font-size: 12.5px; font-weight: 700; text-align: left;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+        .fbk-barra:hover { background: rgba(255, 255, 255, 0.04); color: #fff; }
+        .fbk-barra.activa { background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.45); color: #fff; }
+        .fbk-barra i { color: #fbbf24; font-size: 11px; margin-left: 3px; }
+        .fbk-barra-pista { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+        .fbk-barra-pista span { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #f59e0b, #fbbf24); transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); }
+        .fbk-barra b { text-align: right; font-variant-numeric: tabular-nums; color: #fff; }
+
+        .fbk-datos { display: flex; flex-direction: column; gap: 12px; }
+        .fbk-datos div { display: flex; align-items: baseline; gap: 10px; }
+        .fbk-datos b { min-width: 52px; font-family: var(--adm-font-title); font-size: 24px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+        .fbk-datos span { font-size: 12.5px; font-weight: 600; color: var(--tk-muted); }
+        .fbk-datos .aviso b { color: #f87171; }
+        .fbk-datos .bien b { color: var(--adm-green); }
+
+        /* ---------- Barra de herramientas ---------- */
+        .fbk-herr { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+        .fbk-herr h3 { margin: 0 0 5px; font-size: 17px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; font-family: var(--adm-font-title); }
+        .fbk-herr p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--tk-muted); }
+        .fbk-controles { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .fbk-buscar { position: relative; display: flex; align-items: center; }
+        .fbk-buscar i { position: absolute; left: 12px; font-size: 13px; color: var(--tk-muted); pointer-events: none; }
+        .fbk-buscar input {
+            width: 240px; box-sizing: border-box; padding: 10px 14px 10px 34px; border-radius: 9px; outline: none;
+            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--tk-border); color: #fff; font-family: inherit; font-size: 13px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .fbk-buscar input::placeholder { color: #6b7280; }
+        .fbk-buscar input:focus { border-color: var(--tk-accent); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14); }
+        .fbk-tabs { display: inline-flex; padding: 4px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--tk-border); }
+        .fbk-tab { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border: 1px solid transparent; border-radius: 7px; background: none; cursor: pointer; color: var(--tk-muted); font-family: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap; transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease; }
+        .fbk-tab:hover { color: #fff; }
+        .fbk-tab.activa { color: #fff; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.45); }
+        .fbk-tab span { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); font-size: 11px; font-weight: 700; text-align: center; }
+        .fbk-boton {
+            display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 13px; border-radius: 9px; cursor: pointer;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--tk-border); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+        .fbk-boton:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
+        .fbk-boton.cargando i { animation: fbkGiro 0.8s linear infinite; }
+        @keyframes fbkGiro { to { transform: rotate(360deg); } }
+        .fbk-actualizado { font-size: 12px; color: var(--tk-muted); white-space: nowrap; }
+
+        .fbk-alerta { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px 16px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); color: #fecaca; font-size: 13px; line-height: 1.5; }
+        .fbk-alerta i { color: #f87171; }
+        .fbk-filtro-activo { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 12.5px; font-weight: 600; color: #fde68a; }
+        .fbk-filtro-activo button { background: none; border: none; padding: 0; cursor: pointer; color: var(--tk-muted); font-family: inherit; font-size: 12.5px; font-weight: 600; text-decoration: underline; }
+        .fbk-filtro-activo button:hover { color: #fff; }
+
+        /* ---------- Cada opinión ---------- */
+        .fbk-lista { display: flex; flex-direction: column; gap: 14px; }
+        .fbk-item {
+            position: relative; overflow: hidden;
+            padding: 18px 20px 16px 23px; border-radius: 14px;
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, opacity 0.35s ease, background 0.25s ease;
+        }
+        .fbk-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: rgba(255, 255, 255, 0.12); transition: background 0.3s ease; }
+        .fbk-item:hover { transform: translateY(-2px); border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35); }
+        /* Sin leer: más viva y con la franja lateral encendida */
+        .fbk-item.sin-leer { background: linear-gradient(135deg, rgba(236, 72, 153, 0.07), rgba(255, 255, 255, 0.02) 55%); border-color: rgba(236, 72, 153, 0.3); }
+        .fbk-item.sin-leer::before { background: linear-gradient(180deg, #ec4899, #a855f7); }
+        /* Entrada escalonada: solo la primera vez que aparece cada opinión */
+        .fbk-item.entra { animation: fbkEntra 0.55s cubic-bezier(0.16, 1, 0.3, 1) backwards; animation-delay: calc(var(--i, 0) * 70ms); }
+        @keyframes fbkEntra { from { opacity: 0; transform: translateY(16px) scale(0.98); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+        /* Al eliminarla se encoge y desaparece */
+        .fbk-item.sale { opacity: 0; transform: translateX(30px) scale(0.97); pointer-events: none; }
+
+        .fbk-cab { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .fbk-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 800; color: #fff; background: hsl(var(--h, 350) 55% 40%); border: 2px solid rgba(255, 255, 255, 0.14); }
+        .fbk-quien { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        .fbk-quien b { font-size: 14.5px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fbk-id { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 0; border: none; background: none; cursor: pointer; color: var(--tk-muted); font-family: inherit; font-size: 11.5px; font-variant-numeric: tabular-nums; transition: color 0.2s ease; }
+        .fbk-id:hover { color: #fff; }
+        .fbk-cab-der { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+        .fbk-estrellas { font-size: 17px; letter-spacing: 2px; line-height: 1; color: rgba(255, 255, 255, 0.16); white-space: nowrap; }
+        .fbk-estrellas b { font-weight: 400; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.45); }
+        .fbk-item time { font-size: 11.5px; color: var(--tk-muted); white-space: nowrap; }
+
+        .fbk-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+        .fbk-etiquetas:empty { display: none; }
+        .fbk-etq { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+        .fbk-etq.nueva { background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.4); color: #f9a8d4; }
+        .fbk-etq.nueva::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ec4899; animation: fbkLatido 1.6s ease-in-out infinite; }
+        @keyframes fbkLatido { 0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.6); } 50% { box-shadow: 0 0 0 5px rgba(236, 72, 153, 0); } }
+        .fbk-etq.si { background: rgba(16, 185, 129, 0.13); border: 1px solid rgba(16, 185, 129, 0.35); color: #6ee7b7; }
+        .fbk-etq.quiza { background: rgba(245, 158, 11, 0.13); border: 1px solid rgba(245, 158, 11, 0.35); color: #fcd34d; }
+        .fbk-etq.no { background: rgba(239, 68, 68, 0.13); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; }
+
+        .fbk-respuestas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+        .fbk-resp { --tono: 148, 163, 184; padding: 11px 13px; border-radius: 10px; background: rgba(0, 0, 0, 0.22); border-left: 2px solid rgba(var(--tono), 0.7); }
+        .fbk-resp.bien { --tono: 16, 185, 129; }
+        .fbk-resp.mejora { --tono: 245, 158, 11; }
+        .fbk-resp.extra { --tono: 168, 85, 247; grid-column: 1 / -1; }
+        .fbk-resp.sola { grid-column: 1 / -1; }
+        .fbk-resp small { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: rgb(var(--tono)); }
+        .fbk-resp p { margin: 0; font-size: 13.5px; line-height: 1.55; color: #e5e7eb; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+        .fbk-acciones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+        .fbk-acciones .fbk-boton { height: 32px; font-size: 12px; }
+        .fbk-acciones .borrar { color: #fca5a5; }
+        .fbk-acciones .borrar:hover { color: #fff; }
+
+        .fbk-vacio { text-align: center; padding: 38px 20px; color: var(--tk-muted); font-size: 13.5px; line-height: 1.6; }
+        .fbk-vacio i { display: block; margin-bottom: 10px; font-size: 26px; color: rgba(251, 191, 36, 0.55); }
+        .fbk-vacio strong { display: block; color: #fff; font-size: 14.5px; font-family: var(--adm-font-title); }
+        .fbk-mas { display: flex; justify-content: center; margin-top: 16px; }
+        .fbk-mas .fbk-boton { border-radius: 999px; padding: 0 20px; }
+
+        /* Aviso flotante (copiado, error al guardar...) */
+        .fbk-aviso {
+            position: fixed; top: 20px; left: 50%; z-index: 3000; max-width: calc(100vw - 30px);
+            display: flex; align-items: center; gap: 12px; padding: 13px 20px; border-radius: 14px;
+            background: var(--tk-bg-card); border: 1px solid var(--tk-border); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            color: #fff; font-size: 13.5px; font-weight: 500;
+            opacity: 0; pointer-events: none; transform: translate(-50%, -26px); transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fbk-aviso.visible { opacity: 1; transform: translate(-50%, 0); }
+        .fbk-aviso i { color: var(--adm-green); }
+        .fbk-aviso.error i { color: #f87171; }
+
+        @media (max-width: 980px) {
+            .fbk-resumen { grid-template-columns: 1fr; gap: 20px; }
+            .fbk-datos { flex-direction: row; flex-wrap: wrap; gap: 10px 26px; justify-content: center; }
+        }
+        @media (max-width: 640px) {
+            .fbk-card { padding: 18px; }
+            .fbk-respuestas { grid-template-columns: 1fr; }
+            .fbk-buscar, .fbk-buscar input { width: 100%; }
+            .fbk-cab-der { align-items: flex-start; width: 100%; flex-direction: row; justify-content: space-between; }
+        }
+
+        /* Quien prefiera menos movimiento: sin animaciones en bucle ni transiciones largas */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-background"></div>
+
+    <!-- CONTENEDOR DE ACCESO DENEGADO CON INMERSIÓN 3D MÁXIMA -->
+    <div id="accessDeniedContainer" class="denied-screen" style="display: none;">
+        
+        <!-- Orbes Lumínicos 3D de Fondo -->
+        <div class="denied-orb denied-orb-1"></div>
+        <div class="denied-orb denied-orb-2"></div>
+
+        <!-- TARJETA PRINCIPAL 3D INTERACTIVA -->
+        <div id="deniedCard3D" class="denied-card">
+
+            <div class="denied-top-glow"></div>
+
+            <div class="denied-tag">
+                <i class="fa-solid fa-triangle-exclamation"></i> Protocolo de Seguridad Activo
+            </div>
+
+            <div class="denied-emblem">
+                <div class="denied-ring denied-ring-1"></div>
+                <div class="denied-ring denied-ring-2"></div>
+                <div class="denied-core">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+            </div>
+
+            <h1 class="denied-title">ACCESO NO AUTORIZADO</h1>
+            
+            <p class="denied-text">
+                Tu perfil actual carece de privilegios o consta como <strong class="denied-flag">INACTIVO</strong> dentro de este sistema de control central.
+            </p>
+
+            <div class="denied-options">
+                <div class="denied-option">
+                    <div class="denied-option-icon">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <div class="denied-option-text">
+                        <strong>¿Eres miembro del equipo staff?</strong>
+                        Comunícate con el <strong class="is-owner">owner</strong> para que valide y configure tu acceso de manera oficial en el panel.
+                    </div>
+                </div>
+
+                <div class="denied-option is-blue">
+                    <div class="denied-option-icon">
+                        <i class="fa-solid fa-house-laptop"></i>
+                    </div>
+                    <div class="denied-option-text">
+                        <strong>¿Usuario general?</strong>
+                        Por motivos de seguridad, debes regresar de inmediato a la página principal del servidor.
+                    </div>
+                </div>
+            </div>
+
+            <a href="/home.html" class="denied-cta">
+                <i class="fa-solid fa-house"></i> Volver a la página principal
+            </a>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Menú Lateral Completo (Sidebar) -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-logo-title" style="display: flex; align-items: center; gap: 10px;">
+                    <img src="/src/assets/logowipe.png" alt="ClickSense Logo" class="sidebar-logo" style="width: 32px; height: 32px; object-fit: contain;" onerror="this.style.display='none'">
+                    <span class="server-main-title">ClickSense</span>
+                </div>
+                <button class="sidebar-toggle-icon" id="sidebarToggleBtn" title="Colapsar menú"><i class="fa-solid fa-bars"></i></button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <!-- Sección General -->
+                <div class="nav-category">General</div>
+                <a href="/home.html" class="nav-item"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/admin.html" class="nav-item"><i class="fa-solid fa-shield-halved"></i> Panel Admin</a>
+                <a href="/admin/novedades.html" class="nav-item"><i class="fa-solid fa-newspaper"></i> Novedades</a>
+                <a href="/admin/tickets.html" class="nav-item"><i class="fa-solid fa-headset"></i> Gestión de tickets</a>
+                <a href="/equipo.html" class="nav-item"><i class="fa-solid fa-users"></i> Equipo</a>
+                <a href="/calendario.html" class="nav-item"><i class="fa-solid fa-calendar-days"></i> Calendario</a>
+                <a href="/comercios.html" class="nav-item"><i class="fa-solid fa-store"></i> Comercios</a>
+                <a href="/postulaciones-ilegales.html" class="nav-item"><i class="fa-solid fa-skull"></i> Postulaciones ilegales</a>
+
+                <!-- Espacio de trabajo -->
+                <div class="nav-category">Espacio de trabajo</div>
+                <a href="/grupos.html" class="nav-item"><i class="fa-solid fa-people-group"></i> Grupos</a>
+                <a href="/documentos.html" class="nav-item"><i class="fa-solid fa-book"></i> Documentos</a>
+                <a href="/whitelist.html" class="nav-item"><i class="fa-solid fa-clipboard-list"></i> Whitelist</a>
+
+                <!-- Mi Cuenta -->
+                <div class="nav-category">Mi Cuenta</div>
+                <a href="/perfil.html" class="nav-item"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+                <a href="/historias.html" class="nav-item"><i class="fa-solid fa-feather-pointed"></i> Historias personaje</a>
+                <a href="/tickets.html" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+
+                <!-- LSPD -->
+                <div class="nav-category">LSPD</div>
+                <a href="/lspd-academia.html" class="nav-item"><i class="fa-solid fa-shield-halved"></i> Academia</a>
+
+                <!-- LSSD -->
+                <div class="nav-category">LSSD</div>
+                <a href="/lssd-academia.html" class="nav-item"><i class="fa-solid fa-star-badge"></i> Academia</a>
+
+                <!-- SAHP -->
+                <div class="nav-category">SAHP</div>
+                <a href="/sahp-academia.html" class="nav-item"><i class="fa-solid fa-shield"></i> Academia</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-mini" id="userProfileMini">
+                    <div class="avatar-placeholder" id="userAvatarContainer">
+                        <span id="userAvatarFallback">?</span>
+                    </div>
+                    <div class="user-info">
+                        <span class="username" id="userNameDisplay">Usuario</span>
+                        <span class="user-handle" id="userHandleDisplay" style="font-size: 11px; color: var(--text-muted, #94a3b8); display: block;">@tag</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Botón flotante para abrir el menú cuando está colapsado -->
+        <button class="sidebar-reveal-trigger" id="sidebarRevealBtn" title="Abrir menú">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <header class="top-action-bar animate-fade-down">
+                <div class="breadcrumb">Administración / Opiniones de los usuarios</div>
+                <div class="top-buttons">
+                    <a href="/admin.html" class="top-btn adm-back-btn"><i class="fa-solid fa-arrow-left"></i> Volver al panel</a>
+                </div>
+            </header>
+
+            <!-- ==================================================== -->
+            <!-- RESUMEN: nota media, reparto por estrellas y datos    -->
+            <!-- ==================================================== -->
+            <div class="fbk-card fbk-resumen animate-fade-up">
+                <div class="fbk-media">
+                    <span class="fbk-media-num" id="fbkMedia">–</span>
+                    <div class="fbk-media-estrellas" aria-hidden="true">★★★★★<span id="fbkMediaEstrellas">★★★★★</span></div>
+                    <span class="fbk-media-total" id="fbkTotal">Sin opiniones todavía</span>
+                </div>
+
+                <!-- Cuántas opiniones hay de cada puntuación. Al pulsar una fila se filtra la lista. -->
+                <div class="fbk-barras" id="fbkBarras" role="group" aria-label="Filtrar las opiniones por estrellas"></div>
+
+                <div class="fbk-datos">
+                    <div class="aviso"><b id="fbkSinLeer">0</b><span>sin leer</span></div>
+                    <div class="bien"><b id="fbkRecomiendan">–</b><span>lo recomendarían</span></div>
+                    <div><b id="fbkSemana">0</b><span>en los últimos 7 días</span></div>
+                </div>
+            </div>
+
+            <!-- ==================================================== -->
+            <!-- LISTA DE OPINIONES (enviadas desde public/feedback.html) -->
+            <!-- ==================================================== -->
+            <div class="fbk-card animate-fade-up delay-1">
+                <div class="fbk-herr">
+                    <div>
+                        <h3><i class="fa-solid fa-comment-dots" style="color: var(--accent-red);"></i> Opiniones de los usuarios</h3>
+                        <p id="fbkSub">Lo que los usuarios envían desde «Dar tu feedback». Las más recientes primero.</p>
+                    </div>
+                    <div class="fbk-controles">
+                        <div class="fbk-buscar">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="fbkBuscar" placeholder="Buscar por usuario, ID o texto..." aria-label="Buscar opiniones por usuario, ID de Discord o texto">
+                        </div>
+                        <div class="fbk-tabs" role="group" aria-label="Qué opiniones mostrar">
+                            <button type="button" class="fbk-tab activa" data-ver="todas" aria-pressed="true">Todas <span id="fbkNTodas">0</span></button>
+                            <button type="button" class="fbk-tab" data-ver="sinleer" aria-pressed="false">Sin leer <span id="fbkNSinLeer">0</span></button>
+                        </div>
+                        <button type="button" class="fbk-boton" id="fbkRecargar" title="Recargar las opiniones"><i class="fa-solid fa-rotate"></i> Recargar</button>
+                        <span class="fbk-actualizado" id="fbkActualizado" aria-live="polite"></span>
+                    </div>
+                </div>
+
+                <div class="fbk-alerta" id="fbkError" role="alert" hidden>
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span id="fbkErrorTexto"></span>
+                </div>
+
+                <div class="fbk-filtro-activo" id="fbkFiltroActivo" hidden>
+                    <span id="fbkFiltroTexto"></span>
+                    <button type="button" id="fbkQuitarFiltro">Quitar filtro</button>
+                </div>
+
+                <div class="fbk-lista" id="fbkLista">
+                    <div class="fbk-vacio"><i class="fa-solid fa-spinner fa-spin"></i>Cargando opiniones...</div>
+                </div>
+                <div class="fbk-mas" id="fbkMas" hidden>
+                    <button type="button" class="fbk-boton" id="fbkMasBtn">Ver más</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Aviso flotante -->
+    <div class="fbk-aviso" id="fbkAviso" role="status"><i class="fa-solid fa-circle-check"></i><span id="fbkAvisoTexto"></span></div>
+
+    <script>
+        // Inicialización y validación.
+        // 1. checkUserPermissions() (/src/views/permissions.js): hay que ser staff activo.
+        // 2. El servidor (/api/feedback) solo entrega las opiniones a los rangos autorizados
+        //    en feedback_api.py; si responde 403, se muestra la pantalla de acceso denegado.
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasAccess = await checkUserPermissions();
+            if (!hasAccess) {
+                mostrarAccesoDenegado();
+                return;
+            }
+
+            loadDiscordSessionData();
+            initSidebar();
+            fbkIniciar();
+
+            const estado = await fbkCargar();
+            if (estado === 403) {
+                mostrarAccesoDenegado();
+                return;
+            }
+
+            // Menú lateral: fuera los enlaces de admin que no le corresponden (si está rangos.js)
+            if (window.ClickSenseRangos) {
+                ClickSenseRangos.miAcceso().then(acceso => {
+                    if (!acceso.error) ClickSenseRangos.aplicarPermisos(acceso, { porTexto: false });
+                });
+            }
+
+            // Las opiniones llegan desde los navegadores de los usuarios: se consulta el servidor cada cierto tiempo
+            setInterval(fbkCargar, 30000);
+            window.addEventListener('focus', fbkCargar);
+        });
+
+        // Oculta la aplicación y muestra la pantalla de acceso denegado en 3D
+        function mostrarAccesoDenegado() {
+            const appContainer = document.querySelector('.app-container');
+            if (appContainer) appContainer.style.display = 'none';
+
+            const deniedContainer = document.getElementById('accessDeniedContainer');
+            if (!deniedContainer) return;
+            deniedContainer.style.display = 'flex';
+
+            // Iniciar efecto interactivo de inclinación en la tarjeta.
+            // Solo con ratón y si el usuario no ha pedido reducir el movimiento.
+            const deniedCard = document.getElementById('deniedCard3D');
+            const conRaton = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+            const menosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (deniedCard && conRaton && !menosMovimiento) {
+                // Inclinación máxima en grados, para que el texto siga siendo legible
+                const MAX_TILT = 9;
+                const limitar = v => Math.max(-MAX_TILT, Math.min(MAX_TILT, v));
+                document.addEventListener('mousemove', (e) => {
+                    const rect = deniedCard.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    const rotateX = limitar(-y / 18);
+                    const rotateY = limitar(x / 18);
+                    deniedCard.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                });
+                document.documentElement.addEventListener('mouseleave', () => {
+                    deniedCard.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                });
+            }
+        }
+
+        // Cargar datos de la sesión de Discord guardada en localStorage
+        async function loadDiscordSessionData() {
+            const storedUser = localStorage.getItem('discord_user');
+            const avatarContainer = document.getElementById('userAvatarContainer');
+            const userNameDisplay = document.getElementById('userNameDisplay');
+            const userHandleDisplay = document.getElementById('userHandleDisplay');
+
+            if (!storedUser) return;
+
+            try {
+                const discordUser = JSON.parse(storedUser);
+                if (userNameDisplay) userNameDisplay.textContent = discordUser.displayName || discordUser.username || "Usuario";
+                if (userHandleDisplay) userHandleDisplay.textContent = `@${discordUser.username || "discord"}`;
+                if (avatarContainer && discordUser.avatarUrl) {
+                    avatarContainer.innerHTML = `<img src="${discordUser.avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                }
+            } catch (e) {
+                console.error("Error al cargar la sesión de Discord", e);
+            }
+        }
+
+        // Control del menú lateral (Colapsar y Expandir)
+        function initSidebar() {
+            const toggleBtn = document.getElementById('sidebarToggleBtn');
+            const revealBtn = document.getElementById('sidebarRevealBtn');
+            const sidebar = document.getElementById('sidebar');
+
+            if (toggleBtn && revealBtn && sidebar) {
+                toggleBtn.addEventListener('click', () => sidebar.classList.add('collapsed'));
+                revealBtn.addEventListener('click', () => sidebar.classList.remove('collapsed'));
+            }
+        }
+
+        /**
+         * ------------------------------------------------------------------
+         * OPINIONES DE LOS USUARIOS
+         * Fuente: /api/feedback (feedback_api.py). Cada opinión tiene:
+         *   { id, usuario, discordId, valoracion (1-5), positivo, mejoras,
+         *     recomienda ('si' | 'quiza' | 'no' | ''), comentario, leido, fecha }
+         * ------------------------------------------------------------------
+         */
+        const FBK_POR_PAGINA = 8;
+        let fbkLista = [];
+        let fbkCargadaUnaVez = false;
+        let fbkErrorCarga = '';
+        let fbkEstrellas = 0;               // 0 = todas; 1-5 = solo esa puntuación
+        let fbkVer = 'todas';               // todas | sinleer
+        let fbkVisibles = FBK_POR_PAGINA;
+        let fbkFirma = null;                // para no repintar (ni volver a animar) si no hay cambios
+        const fbkVistas = new Set();        // opiniones que ya han hecho su animación de entrada
+
+        // Las opiniones las escriben los usuarios: todo su texto se escapa antes de pintarlo
+        const fbkEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const fbkEl = id => document.getElementById(id);
+        const fbkNota = o => Math.max(0, Math.min(5, Math.round(Number(o.valoracion) || 0)));
+        const fbkDecimal = n => String(Math.round(n * 10) / 10).replace('.', ',');
+        const fbkMenosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function fbkFecha(iso) {
+            const d = new Date(iso);
+            if (!iso || isNaN(d)) return 'Fecha no registrada';
+            return new Intl.DateTimeFormat('es-ES', {
+                timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            }).format(d);
+        }
+
+        function fbkMotivo(status) {
+            if (status === 401) return 'No hay sesión iniciada en el servidor. Vuelve a iniciar sesión con Discord.';
+            if (status === 403) return 'Tu rango no permite ver las opiniones de los usuarios.';
+            if (status === 404 || status === 405) return 'El servidor no tiene instaladas las opiniones (falta feedback_api.py y sus dos líneas en main.py).';
+            return 'El servidor ha respondido con un error (' + status + ').';
+        }
+
+        let fbkAvisoTimer = null;
+        function fbkAviso(texto, esError) {
+            const caja = fbkEl('fbkAviso');
+            fbkEl('fbkAvisoTexto').textContent = texto;
+            caja.classList.toggle('error', !!esError);
+            caja.querySelector('i').className = esError ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-circle-check';
+            caja.classList.add('visible');
+            clearTimeout(fbkAvisoTimer);
+            fbkAvisoTimer = setTimeout(() => caja.classList.remove('visible'), esError ? 6000 : 2600);
+        }
+
+        // Devuelve el código de respuesta del servidor (200 si todo ha ido bien, 0 si no hay conexión)
+        async function fbkCargar() {
+            const boton = fbkEl('fbkRecargar');
+            boton.classList.add('cargando');
+            let status = 0;
+            try {
+                const r = await fetch('/api/feedback', { cache: 'no-store', credentials: 'same-origin' });
+                status = r.status;
+                if (!r.ok) throw new Error(fbkMotivo(r.status));
+                const datos = await r.json();
+                fbkLista = Array.isArray(datos) ? datos.filter(o => o && typeof o === 'object') : [];
+                fbkErrorCarga = '';
+                fbkEl('fbkActualizado').textContent = 'Actualizado a las ' + new Date().toLocaleTimeString('es-ES');
+            } catch (e) {
+                console.error("Error al cargar las opiniones desde /api/feedback:", e);
+                fbkErrorCarga = e.message === 'Failed to fetch' ? 'No se ha podido conectar con el servidor.' : e.message;
+            }
+            boton.classList.remove('cargando');
+
+            // Si falla, se conserva lo último que se cargó y se avisa
+            fbkEl('fbkError').hidden = !fbkErrorCarga;
+            fbkEl('fbkErrorTexto').textContent = fbkErrorCarga
+                ? (fbkCargadaUnaVez ? `No se han podido actualizar las opiniones. ${fbkErrorCarga} Se muestran las últimas cargadas.` : fbkErrorCarga)
+                : '';
+            const primeraVez = !fbkCargadaUnaVez && !fbkErrorCarga;
+            if (!fbkErrorCarga) fbkCargadaUnaVez = true;
+
+            fbkPintarResumen(primeraVez);
+            fbkPintarLista();
+            return status;
+        }
+
+        /* ---------- Resumen ---------- */
+        // Sube el número de la nota media desde 0 (solo la primera vez)
+        function fbkContar(elemento, hasta) {
+            if (fbkMenosMovimiento) { elemento.textContent = fbkDecimal(hasta); return; }
+            const inicio = performance.now(), duracion = 900;
+            const paso = (ahora) => {
+                const t = Math.min(1, (ahora - inicio) / duracion);
+                elemento.textContent = fbkDecimal(hasta * (1 - Math.pow(1 - t, 3)));
+                if (t < 1) requestAnimationFrame(paso); else elemento.textContent = fbkDecimal(hasta);
+            };
+            requestAnimationFrame(paso);
+        }
+
+        function fbkPintarResumen(animar) {
+            const total = fbkLista.length;
+            const suma = fbkLista.reduce((t, o) => t + fbkNota(o), 0);
+            const media = total ? suma / total : 0;
+
+            const mediaEl = fbkEl('fbkMedia');
+            if (!total) mediaEl.textContent = '–';
+            else if (animar) fbkContar(mediaEl, media);
+            else mediaEl.textContent = fbkDecimal(media);
+            fbkEl('fbkMediaEstrellas').style.width = (media * 20) + '%';
+            fbkEl('fbkTotal').textContent = total
+                ? `Nota media de ${total} ${total === 1 ? 'opinión' : 'opiniones'}`
+                : 'Sin opiniones todavía';
+
+            // Barras de 5 a 1 estrellas
+            const barras = fbkEl('fbkBarras');
+            if (!barras.children.length) {
+                barras.innerHTML = [5, 4, 3, 2, 1].map(n => `
+                    <button type="button" class="fbk-barra" data-estrellas="${n}" title="Ver solo las opiniones de ${n} ${n === 1 ? 'estrella' : 'estrellas'}">
+                        <span>${n}<i class="fa-solid fa-star"></i></span>
+                        <span class="fbk-barra-pista"><span></span></span>
+                        <b>0</b>
+                    </button>`).join('');
+            }
+            barras.querySelectorAll('.fbk-barra').forEach(fila => {
+                const n = Number(fila.dataset.estrellas);
+                const cuantas = fbkLista.filter(o => fbkNota(o) === n).length;
+                fila.querySelector('b').textContent = cuantas;
+                fila.querySelector('.fbk-barra-pista span').style.width = (total ? cuantas * 100 / total : 0) + '%';
+                fila.classList.toggle('activa', fbkEstrellas === n);
+                fila.setAttribute('aria-pressed', fbkEstrellas === n ? 'true' : 'false');
+            });
+
+            const sinLeer = fbkLista.filter(o => !o.leido).length;
+            const contestan = fbkLista.filter(o => ['si', 'quiza', 'no'].includes(o.recomienda));
+            const si = contestan.filter(o => o.recomienda === 'si').length;
+            const hace7 = Date.now() - 7 * 24 * 3600 * 1000;
+            fbkEl('fbkSinLeer').textContent = sinLeer;
+            fbkEl('fbkRecomiendan').textContent = contestan.length ? Math.round(si * 100 / contestan.length) + ' %' : '–';
+            fbkEl('fbkSemana').textContent = fbkLista.filter(o => new Date(o.fecha).getTime() >= hace7).length;
+            fbkEl('fbkNTodas').textContent = total;
+            fbkEl('fbkNSinLeer').textContent = sinLeer;
+        }
+
+        /* ---------- Lista ---------- */
+        const fbkIniciales = nombre => (String(nombre || '').trim().slice(0, 2) || '?').toUpperCase();
+        function fbkTono(texto) {
+            let h = 0;
+            for (const c of String(texto || '')) h = (h * 31 + c.charCodeAt(0)) % 360;
+            return h;
+        }
+
+        const FBK_RECOMIENDA = {
+            si: ['si', 'fa-thumbs-up', 'Lo recomendaría'],
+            quiza: ['quiza', 'fa-scale-balanced', 'Quizá lo recomendaría'],
+            no: ['no', 'fa-thumbs-down', 'No lo recomendaría']
+        };
+
+        function fbkTarjeta(o, clases, i) {
+            const id = fbkEsc(o.id);
+            const nota = fbkNota(o);
+            const rec = FBK_RECOMIENDA[o.recomienda];
+            const positivo = String(o.positivo || '').trim();
+            const mejoras = String(o.mejoras || '').trim();
+            const comentario = String(o.comentario || '').trim();
+            const sola = (positivo && !mejoras) || (!positivo && mejoras) ? ' sola' : '';
+
+            return `
+                <article class="fbk-item ${o.leido ? '' : 'sin-leer'} ${clases}" style="--i: ${i};" data-id="${id}">
+                    <div class="fbk-cab">
+                        <span class="fbk-avatar" style="--h: ${fbkTono(o.discordId || o.usuario)};">${fbkEsc(fbkIniciales(o.usuario))}</span>
+                        <div class="fbk-quien">
+                            <b>${fbkEsc(o.usuario || 'Usuario')}</b>
+                            <button type="button" class="fbk-id" data-copiar="${fbkEsc(o.discordId || '')}" title="Copiar ID de Discord"><i class="fa-regular fa-copy"></i> ${fbkEsc(o.discordId || 'ID no registrado')}</button>
+                        </div>
+                        <div class="fbk-cab-der">
+                            <span class="fbk-estrellas" role="img" aria-label="${nota} de 5 estrellas"><b>${'★'.repeat(nota)}</b>${'★'.repeat(5 - nota)}</span>
+                            <time>${fbkEsc(fbkFecha(o.fecha))}</time>
+                        </div>
+                    </div>
+                    <div class="fbk-etiquetas">${o.leido ? '' : '<span class="fbk-etq nueva">Sin leer</span>'}${rec ? `<span class="fbk-etq ${rec[0]}"><i class="fa-solid ${rec[1]}"></i> ${rec[2]}</span>` : ''}</div>
+                    <div class="fbk-respuestas">
+                        ${positivo ? `<div class="fbk-resp bien${sola}"><small><i class="fa-solid fa-heart"></i> Lo que más le gusta</small><p>${fbkEsc(positivo)}</p></div>` : ''}
+                        ${mejoras ? `<div class="fbk-resp mejora${sola}"><small><i class="fa-solid fa-screwdriver-wrench"></i> Lo que cambiaría</small><p>${fbkEsc(mejoras)}</p></div>` : ''}
+                        ${comentario ? `<div class="fbk-resp extra"><small><i class="fa-solid fa-comment"></i> Algo más</small><p>${fbkEsc(comentario)}</p></div>` : ''}
+                    </div>
+                    <div class="fbk-acciones">
+                        <button type="button" class="fbk-boton" data-leer="${id}">${o.leido
+                            ? '<i class="fa-regular fa-envelope"></i> Marcar como no leída'
+                            : '<i class="fa-solid fa-check"></i> Marcar como leída'}</button>
+                        <button type="button" class="fbk-boton borrar" data-borrar="${id}"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                    </div>
+                </article>`;
+        }
+
+        function fbkPintarLista() {
+            const cont = fbkEl('fbkLista');
+            const consulta = fbkEl('fbkBuscar').value.toLowerCase().trim();
+
+            const filtradas = fbkLista.filter(o => {
+                if (fbkEstrellas && fbkNota(o) !== fbkEstrellas) return false;
+                if (fbkVer === 'sinleer' && o.leido) return false;
+                if (!consulta) return true;
+                return [o.usuario, o.discordId, o.id, o.positivo, o.mejoras, o.comentario]
+                    .some(v => String(v || '').toLowerCase().includes(consulta));
+            });
+            const visibles = filtradas.slice(0, fbkVisibles);
+
+            const quedan = filtradas.length - visibles.length;
+            fbkEl('fbkMas').hidden = quedan <= 0;
+            fbkEl('fbkMasBtn').textContent = `Ver ${Math.min(FBK_POR_PAGINA, quedan)} más`;
+
+            fbkEl('fbkFiltroActivo').hidden = !fbkEstrellas;
+            fbkEl('fbkFiltroTexto').textContent = fbkEstrellas
+                ? `Mostrando solo las opiniones de ${fbkEstrellas} ${fbkEstrellas === 1 ? 'estrella' : 'estrellas'} (${filtradas.length}).` : '';
+
+            // Si no ha cambiado nada (refresco automático), no se toca la lista
+            const firma = JSON.stringify([fbkEstrellas, fbkVer, consulta, fbkCargadaUnaVez, !!fbkErrorCarga && !fbkLista.length, visibles]);
+            if (firma === fbkFirma) return;
+            fbkFirma = firma;
+
+            if (visibles.length === 0) {
+                let vacio;
+                if (!fbkLista.length && fbkErrorCarga) {
+                    vacio = `<i class="fa-solid fa-plug-circle-xmark"></i><strong>No se han podido cargar las opiniones</strong>${fbkEsc(fbkErrorCarga)}`;
+                } else if (!fbkCargadaUnaVez) {
+                    vacio = `<i class="fa-solid fa-spinner fa-spin"></i>Cargando opiniones...`;
+                } else if (!fbkLista.length) {
+                    vacio = `<i class="fa-solid fa-comment-dots"></i><strong>Todavía no hay opiniones</strong>Cuando un usuario envíe la suya desde «Dar tu feedback», aparecerá aquí.`;
+                } else {
+                    vacio = `<i class="fa-solid fa-magnifying-glass"></i><strong>Ninguna opinión coincide</strong>Prueba con otra búsqueda o quita los filtros.`;
+                }
+                cont.innerHTML = `<div class="fbk-vacio">${vacio}</div>`;
+                return;
+            }
+
+            // Solo se animan las opiniones que aparecen por primera vez, una detrás de otra
+            let orden = 0;
+            cont.innerHTML = visibles.map(o => {
+                const clave = String(o.id);
+                return fbkVistas.has(clave) ? fbkTarjeta(o, '', 0) : fbkTarjeta(o, 'entra', orden++);
+            }).join('');
+            visibles.forEach(o => fbkVistas.add(String(o.id)));
+        }
+
+        /* ---------- Acciones ---------- */
+        async function fbkPost(ruta, cuerpo) {
+            const r = await fetch(ruta, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cuerpo)
+            });
+            if (!r.ok) throw new Error(fbkMotivo(r.status));
+            return r.json();
+        }
+
+        async function fbkMarcarLeida(id) {
+            const o = fbkLista.find(x => String(x.id) === String(id));
+            if (!o) return;
+            const nuevo = !o.leido;
+            try {
+                await fbkPost('/api/feedback/leido', { id: o.id, leido: nuevo });
+                o.leido = nuevo;
+                fbkPintarResumen(false);
+                fbkPintarLista();
+            } catch (e) {
+                console.error("Error al marcar la opinión:", e);
+                fbkAviso('No se ha guardado. ' + (e.message === 'Failed to fetch' ? 'No se ha podido conectar con el servidor.' : e.message), true);
+            }
+        }
+
+        async function fbkBorrar(id) {
+            const o = fbkLista.find(x => String(x.id) === String(id));
+            if (!o) return;
+            if (!confirm(`¿Eliminar la opinión de ${o.usuario || 'este usuario'}?\n\nSe borrará del servidor y no se podrá recuperar.`)) return;
+            try {
+                await fbkPost('/api/feedback/borrar', { id: o.id });
+            } catch (e) {
+                console.error("Error al eliminar la opinión:", e);
+                fbkAviso('No se ha eliminado. ' + (e.message === 'Failed to fetch' ? 'No se ha podido conectar con el servidor.' : e.message), true);
+                return;
+            }
+            // La tarjeta sale hacia un lado y después se quita de la lista
+            const tarjeta = [...document.querySelectorAll('#fbkLista .fbk-item')].find(t => t.dataset.id === String(o.id));
+            if (tarjeta) tarjeta.classList.add('sale');
+            setTimeout(() => {
+                fbkLista = fbkLista.filter(x => String(x.id) !== String(o.id));
+                fbkPintarResumen(false);
+                fbkPintarLista();
+            }, fbkMenosMovimiento ? 0 : 350);
+            fbkAviso('Opinión eliminada.');
+        }
+
+        function fbkIniciar() {
+            fbkEl('fbkBuscar').addEventListener('input', () => { fbkVisibles = FBK_POR_PAGINA; fbkPintarLista(); });
+            fbkEl('fbkRecargar').addEventListener('click', fbkCargar);
+            fbkEl('fbkMasBtn').addEventListener('click', () => { fbkVisibles += FBK_POR_PAGINA; fbkPintarLista(); });
+
+            // Pestañas Todas / Sin leer
+            document.querySelectorAll('.fbk-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    fbkVer = tab.dataset.ver;
+                    fbkVisibles = FBK_POR_PAGINA;
+                    document.querySelectorAll('.fbk-tab').forEach(t => {
+                        t.classList.toggle('activa', t === tab);
+                        t.setAttribute('aria-pressed', t === tab ? 'true' : 'false');
+                    });
+                    fbkVistas.clear();      // al cambiar de pestaña las tarjetas vuelven a entrar animadas
+                    fbkPintarLista();
+                });
+            });
+
+            // Filtro por estrellas: pulsar una barra (otra vez para quitarlo)
+            const cambiarEstrellas = (n) => {
+                fbkEstrellas = fbkEstrellas === n ? 0 : n;
+                fbkVisibles = FBK_POR_PAGINA;
+                fbkVistas.clear();
+                fbkPintarResumen(false);
+                fbkPintarLista();
+            };
+            fbkEl('fbkBarras').addEventListener('click', (e) => {
+                const fila = e.target.closest('.fbk-barra');
+                if (fila) cambiarEstrellas(Number(fila.dataset.estrellas));
+            });
+            fbkEl('fbkQuitarFiltro').addEventListener('click', () => cambiarEstrellas(fbkEstrellas));
+
+            // Botones de cada opinión
+            fbkEl('fbkLista').addEventListener('click', (e) => {
+                const copiar = e.target.closest('[data-copiar]');
+                if (copiar) {
+                    if (copiar.dataset.copiar && navigator.clipboard) {
+                        navigator.clipboard.writeText(copiar.dataset.copiar).then(() => fbkAviso('ID de Discord copiado.')).catch(() => {});
+                    }
+                    return;
+                }
+                const leer = e.target.closest('[data-leer]');
+                if (leer) { fbkMarcarLeida(leer.dataset.leer); return; }
+                const borrar = e.target.closest('[data-borrar]');
+                if (borrar) fbkBorrar(borrar.dataset.borrar);
+            });
+        }
+    </script>
+
+    <!-- Rangos y permisos del staff (menú lateral y acceso a la página) -->
+    <script src="/rangos.js"></script>
+
+    <!-- Permisos (mismo control de acceso que el panel) -->
+    <script src="/src/views/permissions.js"></script>
+</body>
+</html>

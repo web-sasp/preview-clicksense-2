@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu opinión | ClickSense RP</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Lexend:wght@600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Las mismas hojas de estilo que el resto de páginas del usuario (menú lateral, cabecera...) -->
+    <link rel="stylesheet" href="/src/assets/home.css">
+    <link rel="stylesheet" href="/src/assets/whitelist.css">
+    <link rel="stylesheet" href="/src/assets/perfil.css">
+
+    <style>
+        /* =========================================================
+           TU OPINIÓN (feedback.html)
+           Todo lo propio de esta página lleva el prefijo "fb-".
+           ========================================================= */
+        .fb-wrap {
+            --fb-rosa: #ec4899;
+            --fb-lila: #8b5cf6;
+            --fb-oro: #fbbf24;
+            --fb-linea: rgba(255, 255, 255, 0.08);
+            --fb-suave: #94a3b8;
+            width: 100%;
+            max-width: 860px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .fb-wrap .welcome-banner-card { width: 100%; box-sizing: border-box; }
+        .fb-wrap [hidden] { display: none !important; }
+
+        .fb-card {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(20, 24, 33, 0.85) 0%, rgba(30, 27, 45, 0.9) 100%);
+            border: 1px solid rgba(236, 72, 153, 0.22);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            color: #fff;
+        }
+
+        .fb-bloque { padding: 26px 30px; border-top: 1px solid var(--fb-linea); }
+        .fb-bloque:first-child { border-top: none; }
+        .fb-bloque h2 { margin: 0 0 5px; font-family: 'Lexend', sans-serif; font-size: 1.08rem; font-weight: 600; line-height: 1.35; color: #fff; }
+        .fb-bloque h2 small { margin-left: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; font-weight: 600; color: var(--fb-suave); }
+        .fb-ayuda { margin: 0 0 14px; font-size: 0.9rem; line-height: 1.55; color: var(--fb-suave); max-width: 62ch; }
+
+        /* ---------- Valoración con estrellas ---------- */
+        .fb-valoracion { text-align: center; padding-top: 34px; padding-bottom: 30px; }
+        .fb-valoracion h2 { font-size: 1.3rem; margin-bottom: 20px; }
+        .fb-estrellas { display: inline-flex; gap: 6px; }
+        .fb-estrella {
+            width: 58px; height: 58px; padding: 5px; border: none; border-radius: 14px; background: transparent; cursor: pointer;
+            transition: transform 0.18s ease, background 0.18s ease;
+        }
+        .fb-estrella svg { width: 100%; height: 100%; display: block; overflow: visible; }
+        .fb-estrella path {
+            fill: transparent; stroke: rgba(255, 255, 255, 0.28); stroke-width: 1.5; stroke-linejoin: round;
+            transition: fill 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
+        }
+        .fb-estrella:hover { transform: translateY(-3px) scale(1.08); }
+        .fb-estrella.llena path { fill: var(--fb-oro); stroke: var(--fb-oro); filter: drop-shadow(0 0 7px rgba(251, 191, 36, 0.55)); }
+        /* Al elegir, las estrellas "saltan" una detrás de otra */
+        .fb-estrella.salta svg { animation: fbSalto 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; animation-delay: calc(var(--i, 0) * 55ms); }
+        @keyframes fbSalto { 0% { transform: scale(0.6) rotate(-18deg); } 60% { transform: scale(1.28) rotate(6deg); } 100% { transform: none; } }
+        .fb-estrellas-texto { margin: 14px 0 0; min-height: 1.5em; font-size: 0.98rem; font-weight: 600; color: var(--fb-suave); transition: color 0.2s ease; }
+        .fb-estrellas-texto.elegida { color: var(--fb-oro); }
+
+        /* ---------- Cajas de texto ---------- */
+        .fb-caja { position: relative; }
+        .fb-texto {
+            width: 100%; min-height: 104px; box-sizing: border-box; resize: vertical;
+            padding: 13px 15px 28px; border-radius: 12px; outline: none;
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff; font-family: inherit; font-size: 0.95rem; line-height: 1.55;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .fb-texto::placeholder { color: #64748b; }
+        .fb-texto:focus { border-color: var(--fb-rosa); background: rgba(236, 72, 153, 0.04); box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15); }
+        .fb-contador { position: absolute; right: 13px; bottom: 9px; font-size: 0.72rem; font-weight: 600; color: #64748b; pointer-events: none; font-variant-numeric: tabular-nums; }
+
+        /* ---------- ¿Lo recomendarías? ---------- */
+        .fb-opciones { display: flex; flex-wrap: wrap; gap: 10px; }
+        .fb-opcion {
+            display: inline-flex; align-items: center; gap: 9px; padding: 11px 20px; border-radius: 12px; cursor: pointer;
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1; font-family: inherit; font-size: 0.93rem; font-weight: 600;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+        .fb-opcion:hover { border-color: rgba(236, 72, 153, 0.5); color: #fff; transform: translateY(-2px); }
+        .fb-opcion.elegida { background: rgba(236, 72, 153, 0.14); border-color: var(--fb-rosa); color: #fff; box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.14); }
+        .fb-opcion.elegida i { color: #f472b6; }
+
+        /* ---------- Pie: aviso, error y botón ---------- */
+        .fb-pie { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+        .fb-nota { margin: 0; flex: 1 1 260px; font-size: 0.83rem; line-height: 1.5; color: var(--fb-suave); }
+        .fb-nota i { margin-right: 6px; color: #f472b6; }
+        .fb-enviar {
+            position: relative; overflow: hidden;
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 13px 28px; border: none; border-radius: 12px; cursor: pointer; white-space: nowrap;
+            background: linear-gradient(135deg, var(--fb-rosa) 0%, var(--fb-lila) 100%); color: #fff;
+            font-family: inherit; font-size: 0.97rem; font-weight: 700;
+            box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+        .fb-enviar:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(236, 72, 153, 0.5); filter: brightness(1.08); }
+        .fb-enviar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; filter: none; }
+        .fb-error {
+            display: flex; gap: 10px; margin-bottom: 16px; padding: 12px 15px; border-radius: 12px;
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fecaca; font-size: 0.9rem; line-height: 1.5;
+            animation: fbTemblor 0.4s ease;
+        }
+        .fb-error i { margin-top: 3px; color: #f87171; }
+        @keyframes fbTemblor { 0%, 100% { transform: none; } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+
+        /* ---------- Estados: ya enviada hace poco / gracias ---------- */
+        .fb-estado { padding: 44px 30px 46px; text-align: center; }
+        .fb-estado h2 { margin: 0 0 8px; font-family: 'Lexend', sans-serif; font-size: 1.4rem; font-weight: 600; color: #fff; }
+        .fb-estado p { margin: 0 auto; max-width: 48ch; font-size: 0.95rem; line-height: 1.6; color: var(--fb-suave); }
+        .fb-estado p strong { color: #fff; }
+        .fb-estado-icono { width: 76px; height: 76px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #f472b6; background: rgba(236, 72, 153, 0.13); border: 1px solid rgba(236, 72, 153, 0.35); }
+        .fb-volver { display: inline-flex; align-items: center; gap: 9px; margin-top: 22px; padding: 11px 22px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; text-decoration: none; font-size: 0.92rem; font-weight: 600; transition: background 0.2s ease, transform 0.2s ease; }
+        .fb-volver:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+
+        /* Confirmación: círculo y "check" que se dibujan, y las estrellas que se han dado */
+        .fb-check { position: relative; width: 92px; height: 92px; margin: 0 auto 16px; }
+        .fb-check::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(34, 197, 94, 0.6); animation: fbOnda 1.4s ease-out 0.5s 2 backwards; }
+        .fb-check svg { width: 100%; height: 100%; }
+        .fb-check circle { fill: rgba(34, 197, 94, 0.12); stroke: #22c55e; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 214; stroke-dashoffset: 214; transform: rotate(-90deg); transform-origin: 50% 50%; animation: fbTrazo 0.7s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+        .fb-check path { fill: none; stroke: #22c55e; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 50; stroke-dashoffset: 50; animation: fbTrazo 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.55s forwards; }
+        @keyframes fbTrazo { to { stroke-dashoffset: 0; } }
+        @keyframes fbOnda { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.5); opacity: 0; } }
+        .fb-gracias h2, .fb-gracias p, .fb-gracias .fb-volver, .fb-gracias-estrellas { animation: fbSube 0.5s ease backwards; }
+        .fb-gracias h2 { animation-delay: 0.5s; }
+        .fb-gracias p { animation-delay: 0.62s; }
+        .fb-gracias-estrellas { animation-delay: 0.74s; margin-top: 16px; font-size: 20px; letter-spacing: 4px; color: var(--fb-oro); }
+        .fb-gracias .fb-volver { animation-delay: 0.86s; }
+        @keyframes fbSube { from { opacity: 0; transform: translateY(10px); } }
+
+        @media (max-width: 600px) {
+            .fb-bloque { padding: 22px 18px; }
+            .fb-estrella { width: 48px; height: 48px; padding: 4px; }
+            .fb-estrellas { gap: 2px; }
+            .fb-opcion { flex: 1 1 auto; justify-content: center; }
+            .fb-enviar { width: 100%; }
+            .fb-estado { padding: 36px 20px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .fb-wrap *, .fb-wrap *::before { animation: none !important; transition: none !important; }
+            .fb-check circle, .fb-check path { stroke-dashoffset: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-background"></div>
+
+    <div class="app-container">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-logo-title" style="display: flex; align-items: center; gap: 10px;">
+                    <img src="/src/assets/logowipe.png" alt="ClickSense Logo" class="sidebar-logo" style="width: 32px; height: 32px; object-fit: contain;">
+                    <span class="server-main-title">ClickSense</span>
+                </div>
+                <button class="sidebar-toggle-icon" id="sidebarToggleBtn" title="Colapsar menú">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <!-- El menú lateral se gestiona mediante guards.js -->
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-mini" id="userProfileMini">
+                    <div class="avatar-placeholder" id="userAvatarContainer">
+                        <span id="userAvatarFallback">?</span>
+                    </div>
+                    <div class="user-info">
+                        <span class="username" id="userNameDisplay">Usuario</span>
+                        <span class="user-handle" id="userHandleDisplay" style="font-size: 11px; color: var(--text-muted, #94a3b8); display: block;">@tag</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <button class="sidebar-reveal-trigger" id="sidebarRevealBtn" title="Abrir menú">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <main class="main-content">
+
+            <header class="top-action-bar animate-fade-down">
+                <div class="breadcrumb">Soporte / Tu opinión</div>
+                <div class="top-buttons">
+                    <a href="/home.html" class="top-btn">
+                        <i class="fa-solid fa-arrow-left"></i> Volver al inicio
+                    </a>
+                </div>
+            </header>
+
+            <div class="fb-wrap">
+
+                <div class="welcome-banner-card animate-fade-up">
+                    <div class="welcome-avatar" style="background: rgba(236, 72, 153, 0.15); display: flex; align-items: center; justify-content: center; border-radius: 50%; width: 48px; height: 48px; border: 1px solid rgba(236, 72, 153, 0.3); flex-shrink: 0;">
+                        <i class="fa-solid fa-comment-dots" style="font-size: 20px; color: #f472b6;"></i>
+                    </div>
+                    <div class="welcome-text-content">
+                        <h1>Tu opinión sobre ClickSense RP</h1>
+                        <p>Cuéntanos qué te parece el servidor. Leemos todas las opiniones y nos sirven para decidir qué mejorar.</p>
+                    </div>
+                </div>
+
+                <!-- Ya ha opinado hace poco: se le dice cuándo puede volver a hacerlo -->
+                <div class="fb-card fb-estado animate-fade-up" id="fbEspera" hidden>
+                    <div class="fb-estado-icono"><i class="fa-solid fa-hourglass-half"></i></div>
+                    <h2>Ya hemos recibido tu opinión</h2>
+                    <p id="fbEsperaTexto"></p>
+                    <a href="/home.html" class="fb-volver"><i class="fa-solid fa-house"></i> Volver al inicio</a>
+                </div>
+
+                <!-- Formulario -->
+                <form class="fb-card animate-fade-up" id="fbForm" novalidate>
+
+                    <section class="fb-bloque fb-valoracion">
+                        <h2 id="fbTituloEstrellas">¿Cómo valoras el servidor en general?</h2>
+                        <div class="fb-estrellas" id="fbEstrellas" role="radiogroup" aria-labelledby="fbTituloEstrellas">
+                            <!-- Las cinco estrellas se pintan desde el script -->
+                        </div>
+                        <p class="fb-estrellas-texto" id="fbEstrellasTexto" aria-live="polite">Elige de 1 a 5 estrellas</p>
+                    </section>
+
+                    <section class="fb-bloque">
+                        <h2><label for="fbPositivo">¿Qué es lo que más te gusta?</label></h2>
+                        <p class="fb-ayuda">Lo que crees que el servidor hace bien y no debería cambiar.</p>
+                        <div class="fb-caja">
+                            <textarea class="fb-texto" id="fbPositivo" maxlength="1000" placeholder="El rol, la comunidad, los eventos, el trato del staff..."></textarea>
+                            <span class="fb-contador" data-contador="fbPositivo">0 / 1000</span>
+                        </div>
+                    </section>
+
+                    <section class="fb-bloque">
+                        <h2><label for="fbMejoras">¿Qué cambiarías o mejorarías?</label></h2>
+                        <p class="fb-ayuda">Normas que no funcionan, fallos, cosas que echas en falta... Cuanto más concreto seas, más fácil será arreglarlo.</p>
+                        <div class="fb-caja">
+                            <textarea class="fb-texto" id="fbMejoras" maxlength="1000" placeholder="Qué falla, qué sobra o qué te gustaría que se añadiera"></textarea>
+                            <span class="fb-contador" data-contador="fbMejoras">0 / 1000</span>
+                        </div>
+                    </section>
+
+                    <section class="fb-bloque">
+                        <h2 id="fbTituloRecomienda">¿Recomendarías ClickSense RP a otros jugadores? <small>Opcional</small></h2>
+                        <div class="fb-opciones" id="fbRecomienda" role="radiogroup" aria-labelledby="fbTituloRecomienda" style="margin-top: 14px;">
+                            <button type="button" class="fb-opcion" role="radio" aria-checked="false" data-valor="si"><i class="fa-solid fa-thumbs-up"></i> Sí</button>
+                            <button type="button" class="fb-opcion" role="radio" aria-checked="false" data-valor="quiza"><i class="fa-solid fa-scale-balanced"></i> Quizá</button>
+                            <button type="button" class="fb-opcion" role="radio" aria-checked="false" data-valor="no"><i class="fa-solid fa-thumbs-down"></i> No</button>
+                        </div>
+                    </section>
+
+                    <section class="fb-bloque">
+                        <h2><label for="fbComentario">¿Quieres añadir algo más?</label> <small>Opcional</small></h2>
+                        <div class="fb-caja" style="margin-top: 14px;">
+                            <textarea class="fb-texto" id="fbComentario" maxlength="1000" placeholder="Cualquier otra cosa que quieras que sepamos"></textarea>
+                            <span class="fb-contador" data-contador="fbComentario">0 / 1000</span>
+                        </div>
+                    </section>
+
+                    <section class="fb-bloque">
+                        <div class="fb-error" id="fbError" role="alert" hidden></div>
+                        <div class="fb-pie">
+                            <p class="fb-nota"><i class="fa-solid fa-user-shield"></i>Tu opinión se envía con tu nombre de Discord y solo la ve el equipo responsable del servidor.</p>
+                            <button type="submit" class="fb-enviar" id="fbEnviar"><i class="fa-solid fa-paper-plane"></i> <span>Enviar opinión</span></button>
+                        </div>
+                    </section>
+                </form>
+
+                <!-- Confirmación -->
+                <div class="fb-card fb-estado fb-gracias" id="fbGracias" hidden>
+                    <div class="fb-check">
+                        <svg viewBox="0 0 80 80" aria-hidden="true">
+                            <circle cx="40" cy="40" r="34"></circle>
+                            <path d="M25 41 l10 10 l20 -22"></path>
+                        </svg>
+                    </div>
+                    <h2 tabindex="-1" id="fbGraciasTitulo">Opinión enviada</h2>
+                    <p>Gracias por dedicarnos un momento. El equipo la leerá y la tendrá en cuenta para seguir mejorando ClickSense RP.</p>
+                    <div class="fb-gracias-estrellas" id="fbGraciasEstrellas" aria-hidden="true"></div>
+                    <a href="/home.html" class="fb-volver"><i class="fa-solid fa-house"></i> Volver al inicio</a>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+    async function loadDiscordSessionData() {
+        const storedUser = localStorage.getItem('discord_user');
+        const avatarContainer = document.getElementById('userAvatarContainer');
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        const userHandleDisplay = document.getElementById('userHandleDisplay');
+
+        if (!storedUser) return;
+
+        try {
+            const discordUser = JSON.parse(storedUser);
+            if (userNameDisplay) userNameDisplay.textContent = discordUser.displayName || discordUser.username || "Usuario";
+            if (userHandleDisplay) userHandleDisplay.textContent = "@" + (discordUser.username || "discord");
+            if (avatarContainer && discordUser.avatarUrl) {
+                avatarContainer.innerHTML = `<img src="${discordUser.avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            }
+        } catch (e) {
+            console.error("Error al cargar sesión de Discord:", e);
+        }
+    }
+
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const revealBtn = document.getElementById('sidebarRevealBtn');
+    const sidebar = document.getElementById('sidebar');
+
+    if (toggleBtn && revealBtn && sidebar) {
+        toggleBtn.addEventListener('click', () => sidebar.classList.add('collapsed'));
+        revealBtn.addEventListener('click', () => sidebar.classList.remove('collapsed'));
+    }
+
+    /* =====================================================================
+       TU OPINIÓN
+       La opinión se envía a /api/feedback (feedback_api.py en el servidor), que
+       la guarda con el nombre y el ID de Discord de la sesión. El staff la ve
+       en admin/feedbacks.html.
+       ===================================================================== */
+    const FB_TEXTOS = ['', 'Muy mejorable', 'Mejorable', 'Correcto', 'Muy bueno', 'Excelente'];
+    const FB_MIN_TEXTO = 10;    // letras mínimas entre las tres respuestas escritas
+    const FB_ESTRELLA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 6.1 6.7.9-4.9 4.7 1.2 6.7L12 17.8 6.1 21l1.2-6.7-4.9-4.7 6.7-.9z"></path></svg>`;
+
+    const fb = { valor: 0, recomienda: '', enviando: false };
+    const fbEl = id => document.getElementById(id);
+    const fbEstrellas = fbEl('fbEstrellas');
+
+    function fbFecha(iso) {
+        const d = new Date(iso);
+        if (isNaN(d)) return '';
+        return new Intl.DateTimeFormat('es-ES', {
+            timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: false
+        }).format(d);
+    }
+
+    /* ---------- Estrellas ---------- */
+    fbEstrellas.innerHTML = [1, 2, 3, 4, 5].map(n =>
+        `<button type="button" class="fb-estrella" role="radio" aria-checked="false" tabindex="${n === 1 ? 0 : -1}" data-valor="${n}" style="--i: ${n - 1};" aria-label="${n} ${n === 1 ? 'estrella' : 'estrellas'}: ${FB_TEXTOS[n]}">${FB_ESTRELLA}</button>`
+    ).join('');
+
+    // Rellena las estrellas hasta "hasta". Al pasar el ratón es solo una vista previa.
+    function fbPintarEstrellas(hasta, saltar) {
+        fbEstrellas.querySelectorAll('.fb-estrella').forEach(b => {
+            const n = Number(b.dataset.valor);
+            b.classList.toggle('llena', n <= hasta);
+            b.classList.remove('salta');
+            if (saltar && n <= hasta) { void b.offsetWidth; b.classList.add('salta'); }
+        });
+        const texto = fbEl('fbEstrellasTexto');
+        texto.textContent = hasta ? FB_TEXTOS[hasta] : 'Elige de 1 a 5 estrellas';
+        texto.classList.toggle('elegida', hasta > 0);
+    }
+
+    function fbElegirEstrellas(n) {
+        fb.valor = Math.max(1, Math.min(5, n));
+        fbEstrellas.querySelectorAll('.fb-estrella').forEach(b => {
+            const esta = Number(b.dataset.valor) === fb.valor;
+            b.setAttribute('aria-checked', esta ? 'true' : 'false');
+            b.tabIndex = esta ? 0 : -1;
+        });
+        fbPintarEstrellas(fb.valor, true);
+    }
+
+    fbEstrellas.addEventListener('click', (e) => {
+        const b = e.target.closest('.fb-estrella');
+        if (b) fbElegirEstrellas(Number(b.dataset.valor));
+    });
+    fbEstrellas.addEventListener('mouseover', (e) => {
+        const b = e.target.closest('.fb-estrella');
+        if (b) fbPintarEstrellas(Number(b.dataset.valor), false);
+    });
+    fbEstrellas.addEventListener('mouseleave', () => fbPintarEstrellas(fb.valor, false));
+    // Con el teclado: flechas para subir o bajar la valoración
+    fbEstrellas.addEventListener('keydown', (e) => {
+        let n = fb.valor;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') n = Math.min(5, fb.valor + 1);
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') n = Math.max(1, fb.valor - 1);
+        else return;
+        e.preventDefault();
+        fbElegirEstrellas(n || 1);
+        fbEstrellas.querySelector(`[data-valor="${fb.valor}"]`).focus();
+    });
+
+    /* ---------- ¿Lo recomendarías? (se puede desmarcar pulsando otra vez) ---------- */
+    fbEl('fbRecomienda').addEventListener('click', (e) => {
+        const b = e.target.closest('.fb-opcion');
+        if (!b) return;
+        fb.recomienda = fb.recomienda === b.dataset.valor ? '' : b.dataset.valor;
+        fbEl('fbRecomienda').querySelectorAll('.fb-opcion').forEach(o => {
+            const elegida = o.dataset.valor === fb.recomienda;
+            o.classList.toggle('elegida', elegida);
+            o.setAttribute('aria-checked', elegida ? 'true' : 'false');
+        });
+    });
+
+    /* ---------- Contadores de letras ---------- */
+    document.querySelectorAll('[data-contador]').forEach(contador => {
+        const caja = fbEl(contador.dataset.contador);
+        const pintar = () => { contador.textContent = `${caja.value.length} / ${caja.maxLength}`; };
+        caja.addEventListener('input', pintar);
+        pintar();
+    });
+
+    /* ---------- Avisos ---------- */
+    function fbError(texto, enfocar) {
+        const caja = fbEl('fbError');
+        caja.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span></span>`;
+        caja.querySelector('span').textContent = texto;
+        caja.hidden = true;
+        void caja.offsetWidth;          // reinicia la animación si ya estaba visible
+        caja.hidden = false;
+        if (enfocar) enfocar.focus();
+    }
+
+    function fbMotivo(status, detalle) {
+        if (status === 401) return 'Tienes que iniciar sesión con Discord para enviar tu opinión.';
+        if (status === 404 || status === 405) return 'El servidor todavía no tiene instaladas las opiniones (falta feedback_api.py y sus dos líneas en main.py).';
+        if (status === 429) return 'Ya has enviado tu opinión hace poco. Podrás enviar otra más adelante.';
+        if (status === 400 && typeof detalle === 'string' && detalle) return detalle + '.';
+        return 'El servidor ha respondido con un error (' + status + ').';
+    }
+
+    function fbCargando(activo) {
+        const btn = fbEl('fbEnviar');
+        btn.disabled = activo;
+        btn.innerHTML = activo
+            ? `<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Enviando...</span>`
+            : `<i class="fa-solid fa-paper-plane"></i> <span>Enviar opinión</span>`;
+    }
+
+    /* ---------- ¿Puede opinar ahora? ---------- */
+    // Si ya envió una opinión hace poco, en vez del formulario se le dice cuándo puede enviar otra.
+    async function fbComprobarEstado() {
+        try {
+            const r = await fetch('/api/feedback/mio', { cache: 'no-store', credentials: 'same-origin' });
+            if (!r.ok) return;                      // si el servidor no contesta, se deja el formulario
+            const estado = await r.json();
+            if (estado && estado.puedeEnviar === false && fbEl('fbGracias').hidden) {
+                const cuando = fbFecha(estado.proximoEnvio);
+                fbEl('fbEsperaTexto').innerHTML = cuando
+                    ? `Gracias por participar. Podrás enviar una nueva opinión a partir del <strong>${cuando}</strong>.`
+                    : 'Gracias por participar. Podrás enviar una nueva opinión más adelante.';
+                fbEl('fbForm').hidden = true;
+                fbEl('fbEspera').hidden = false;
+            }
+        } catch (e) {
+            console.error('No se pudo comprobar el estado de la opinión:', e);
+        }
+    }
+
+    /* ---------- Enviar ---------- */
+    fbEl('fbForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (fb.enviando) return;
+        fbEl('fbError').hidden = true;
+
+        const positivo = fbEl('fbPositivo').value.trim();
+        const mejoras = fbEl('fbMejoras').value.trim();
+        const comentario = fbEl('fbComentario').value.trim();
+
+        if (!fb.valor) {
+            fbEl('fbTituloEstrellas').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return fbError('Elige de 1 a 5 estrellas para valorar el servidor.', fbEstrellas.querySelector('.fb-estrella'));
+        }
+        if (positivo.length + mejoras.length + comentario.length < FB_MIN_TEXTO) {
+            return fbError('Cuéntanos al menos qué te gusta o qué cambiarías: con un par de frases es suficiente.', fbEl('fbPositivo'));
+        }
+
+        fb.enviando = true;
+        fbCargando(true);
+        try {
+            const r = await fetch('/api/feedback', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ valoracion: fb.valor, positivo, mejoras, recomienda: fb.recomienda, comentario })
+            });
+            if (!r.ok) {
+                let detalle = '';
+                try { detalle = (await r.json()).detail; } catch (err) {}
+                if (r.status === 429) fbComprobarEstado();
+                throw new Error(fbMotivo(r.status, detalle));
+            }
+
+            // Enviada: se cambia el formulario por la confirmación
+            fbEl('fbForm').hidden = true;
+            fbEl('fbGraciasEstrellas').textContent = '★'.repeat(fb.valor) + '☆'.repeat(5 - fb.valor);
+            fbEl('fbGracias').hidden = false;
+            fbEl('fbGracias').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            fbEl('fbGraciasTitulo').focus({ preventScroll: true });
+        } catch (err) {
+            console.error('Error al enviar la opinión:', err);
+            fbError(err.message === 'Failed to fetch' ? 'No se ha podido conectar con el servidor. Tu opinión sigue escrita: vuelve a intentarlo.' : err.message);
+        } finally {
+            fb.enviando = false;
+            fbCargando(false);
+        }
+    });
+
+    // En cuanto el usuario corrige algo, el aviso de error desaparece
+    ['input', 'click'].forEach(evento => fbEl('fbForm').addEventListener(evento, (e) => {
+        if (!e.target.closest('#fbEnviar')) fbEl('fbError').hidden = true;
+    }));
+
+    // Aviso si se intenta salir con una opinión a medio escribir
+    window.addEventListener('beforeunload', (e) => {
+        const escrito = fbEl('fbPositivo').value.trim() || fbEl('fbMejoras').value.trim() || fbEl('fbComentario').value.trim();
+        if (escrito && !fbEl('fbForm').hidden) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDiscordSessionData();
+        fbComprobarEstado();
+    });
+    </script>
+
+    <script src="/guards.js"></script>
+</body>
+</html>

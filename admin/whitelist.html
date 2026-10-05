@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Whitelist | ClickSense RP</title>
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-main: #0c0812;
+            --bg-sidebar: #08050a;
+            --bg-card: #130d1c;
+            --bg-card-hover: #211926;
+            --border-color: rgba(239, 68, 68, 0.2);
+            --text-primary: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-red: #ef4444;
+            --verde: #10b981;
+            --ambar: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        [hidden] { display: none !important; }
+
+        /* Scrollbar moderno, elegante y estilizado */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(12, 8, 18, 0.9); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(239, 68, 68, 0.35); border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.2); transition: background 0.3s ease; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(239, 68, 68, 0.7); }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-8px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+        @keyframes slideDownRoof { 0% { opacity: 0; transform: translate(-50%, -30px); } 100% { opacity: 1; transform: translate(-50%, 0); } }
+        @keyframes slideUpRoof { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -30px); } }
+
+        .animate-fade-down { animation: fadeInDown 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        .animate-fade-up { opacity: 0; animation: fadeInUp 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.18s; }
+
+        .grid-background {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(to right, rgba(239, 68, 68, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(239, 68, 68, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px; z-index: 0; pointer-events: none;
+        }
+
+        .app-container { display: flex; min-height: 100vh; position: relative; z-index: 10; }
+
+        .sidebar {
+            width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            overflow: hidden; flex-shrink: 0; z-index: 20;
+        }
+        .sidebar.collapsed { transform: translateX(-100%); width: 0; border-right: none; }
+
+        .sidebar-reveal-trigger {
+            position: fixed; left: 0; top: 50%; transform: translateY(-50%) translateX(-100%);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.8) 0%, rgba(244, 114, 182, 0.8) 100%);
+            color: #fff; border: none; border-top-right-radius: 8px; border-bottom-right-radius: 8px;
+            width: 24px; height: 50px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 15; transition: 0.3s; opacity: 0; pointer-events: none;
+        }
+        .sidebar.collapsed ~ .sidebar-reveal-trigger { opacity: 1; pointer-events: auto; transform: translateY(-50%) translateX(0); }
+
+        .sidebar-brand { display: flex; align-items: center; justify-content: space-between; padding: 20px; border-bottom: 1px solid var(--border-color); width: 260px; }
+        .server-main-title { font-size: 16px; font-weight: 800; color: #fff; }
+        .sidebar-toggle-icon { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 15px 12px; display: flex; flex-direction: column; gap: 2px; width: 260px; }
+        .nav-category { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; padding: 12px 10px 6px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; text-decoration: none; padding: 9px 12px; color: #9ca3af; font-size: 13.5px; border-radius: 8px; transition: 0.2s; }
+        .nav-item i { width: 16px; text-align: center; }
+        .nav-item:hover { background: rgba(255, 255, 255, 0.03); color: #fff; }
+        .nav-item.active { background: rgba(239, 68, 68, 0.15); color: #fff; font-weight: 600; }
+        .sidebar-footer { padding: 12px; border-top: 1px solid var(--border-color); background: rgba(5, 3, 8, 0.6); width: 260px; }
+        .user-profile-mini { display: flex; align-items: center; gap: 10px; padding: 6px; }
+        .avatar-placeholder { width: 32px; height: 32px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; overflow: hidden; flex-shrink: 0; }
+        .user-info { display: flex; flex-direction: column; }
+        .username { font-size: 13px; font-weight: 600; color: #fff; display: block; }
+        .user-handle { font-size: 11px; color: var(--text-muted); display: block; }
+
+        .main-content { flex: 1; padding: 25px; width: calc(100% - 260px); min-width: 0; transition: width 0.4s; }
+        .sidebar.collapsed ~ .main-content { width: 100%; }
+
+        .top-action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 12px; flex-wrap: wrap; }
+        .breadcrumb { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+        .top-acciones { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        .welcome-banner-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px 28px; display: flex; align-items: center; gap: 20px; margin-bottom: 25px; }
+        .welcome-avatar { width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(239, 68, 68, 0.4); flex-shrink: 0; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-red); font-size: 24px; }
+        .welcome-text-content h1 { color: #fff; margin-bottom: 4px; font-size: 20px; font-weight: 700; }
+        .welcome-text-content p { font-size: 13.5px; color: var(--text-muted); }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .metric-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+        .metric-card-title { font-size: 12.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+        .metric-card-value { font-size: 22px; font-weight: 800; color: #fff; }
+
+        .admin-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 25px; margin-bottom: 25px; }
+        .table-header-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; flex-wrap: wrap; }
+        .toolbar-title-area h3 { font-size: 16px; color: #fff; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .toolbar-title-area p { color: var(--text-muted); font-size: 13.5px; }
+        .toolbar-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .search-box-wrapper { position: relative; display: flex; align-items: center; }
+        .search-box-wrapper i { position: absolute; left: 12px; color: var(--text-muted); font-size: 13px; }
+        .search-input { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 9px 14px 9px 36px; color: #fff; font-size: 13px; outline: none; width: 240px; transition: 0.2s; font-family: inherit; }
+        .search-input:focus { border-color: var(--accent-red); background: rgba(239, 68, 68, 0.03); }
+
+        .filter-dropdown-container { position: relative; display: inline-block; }
+        .filter-main-btn { background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%); border: 1px solid rgba(239, 68, 68, 0.4); color: #fff; padding: 9px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-family: inherit; }
+        .filter-main-btn:hover { border-color: var(--accent-red); }
+        .filter-dropdown-menu { position: absolute; right: 0; top: calc(100% + 6px); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; width: 190px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); display: none; z-index: 50; overflow: hidden; padding: 6px; }
+        .filter-dropdown-menu.active { display: block; animation: fadeInDown 0.2s ease forwards; }
+        .filter-option { padding: 10px 12px; font-size: 13px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; border-radius: 8px; margin-bottom: 2px; }
+        .filter-option:hover { background: rgba(239, 68, 68, 0.15); color: #fff; transform: translateX(3px); }
+        .filter-option i { width: 20px; text-align: center; }
+
+        .table-responsive { width: 100%; overflow-x: auto; }
+        .org-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px; min-width: 820px; }
+        .org-table th { color: var(--text-muted); font-weight: 600; padding: 12px 15px; border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.01); white-space: nowrap; }
+        .org-table td { padding: 14px 15px; border-bottom: 1px solid rgba(239, 68, 68, 0.08); color: #fff; vertical-align: middle; }
+        .org-table tbody tr:hover { background: var(--bg-card-hover); }
+
+        .badge-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+        .badge-status.Aprobado { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-status.Rechazado { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-manual { font-size: 10.5px; font-weight: 600; color: var(--ambar); margin-left: 6px; white-space: nowrap; }
+        .sin-test { font-size: 12.5px; font-weight: 600; color: var(--ambar); white-space: nowrap; }
+
+        /* Nota: 24 / 30 con barra */
+        .nota-celda { display: flex; flex-direction: column; gap: 6px; min-width: 130px; }
+        .nota-linea { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-weight: 700; }
+        .nota-linea small { font-weight: 600; color: var(--text-muted); font-size: 12px; }
+        .nota-barra { height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+        .nota-barra span { display: block; height: 100%; border-radius: 999px; }
+        .nota-barra span.ok { background: var(--verde); }
+        .nota-barra span.ko { background: var(--accent-red); }
+        .recuento { display: inline-flex; gap: 12px; font-weight: 600; white-space: nowrap; }
+        .recuento .v { color: var(--verde); }
+        .recuento .r { color: #f87171; }
+
+        .action-btns-group { display: flex; align-items: center; gap: 6px; }
+        .action-icon-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; font-family: inherit; }
+        .action-icon-btn:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
+        .approve-btn { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; }
+        .approve-btn:hover { background: rgba(16, 185, 129, 0.3); border-color: #10b981; color: #fff; }
+        .reject-btn { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
+        .reject-btn:hover { background: rgba(239, 68, 68, 0.3); border-color: var(--accent-red); color: #fff; }
+        :focus-visible { outline: 2px solid #f87171; outline-offset: 2px; }
+
+        #successNotification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px 22px; display: flex; align-items: center; gap: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); z-index: 3000; opacity: 0; pointer-events: none; transition: 0.3s; max-width: calc(100vw - 30px); }
+        #successNotification.show { opacity: 1; pointer-events: auto; animation: slideDownRoof 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        #successNotification.hide { animation: slideUpRoof 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        .success-icon-badge { width: 28px; height: 28px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #10b981; font-size: 13px; flex-shrink: 0; }
+        .success-message-text { font-size: 13.5px; color: #fff; font-weight: 500; }
+        .success-tag-pill { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 8px; font-size: 11.5px; font-weight: 700; color: #fff; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; width: 92%; max-width: 820px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); transform: scale(0.95); transition: 0.3s; max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; border: 1px solid var(--border-color); font-family: inherit; }
+        .modal-btn-cancel { background: rgba(255,255,255,0.05); color: #fff; }
+        .modal-btn-cancel:hover { background: rgba(255,255,255,0.1); }
+
+        /* ===== Detalle de un intento ===== */
+        .det-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .det-campo { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 11px 14px; min-width: 0; }
+        .det-campo > span { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 3px; }
+        .det-campo b { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: #fff; word-break: break-all; }
+        .det-campo small { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+        .copy-mini { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; padding: 2px; }
+        .copy-mini:hover { color: #fff; }
+
+        .det-titulo { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin: 20px 0 10px; }
+        .det-bloque { display: grid; grid-template-columns: minmax(0, 1fr) 150px 56px; gap: 12px; align-items: center; padding: 7px 0; font-size: 13px; }
+        .det-bloque .nota-barra { height: 6px; }
+        .det-bloque b { text-align: right; font-weight: 700; }
+
+        .det-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .det-filtro { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); color: var(--text-muted); padding: 7px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.2s; }
+        .det-filtro:hover { color: #fff; }
+        .det-filtro.activo { background: rgba(239, 68, 68, 0.18); border-color: var(--accent-red); color: #fff; }
+
+        .det-item { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px; padding: 14px; margin-bottom: 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-left-width: 3px; }
+        .det-item.ok { border-left-color: var(--verde); }
+        .det-item.ko { border-left-color: var(--accent-red); }
+        .det-item[hidden] { display: none; }
+        .det-num { width: 46px; height: 46px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 12px; font-weight: 700; }
+        .det-item.ok .det-num { background: rgba(16, 185, 129, 0.14); color: var(--verde); }
+        .det-item.ko .det-num { background: rgba(239, 68, 68, 0.14); color: #f87171; }
+        .det-tema { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+        .det-enun { font-size: 13.5px; line-height: 1.55; color: #e5e7eb; margin-bottom: 10px; }
+        .det-resp { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 10px; font-size: 13px; line-height: 1.5; padding: 8px 10px; border-radius: 8px; margin-top: 6px; }
+        .det-resp span { font-size: 11px; font-weight: 700; text-transform: uppercase; padding-top: 2px; }
+        .det-resp.bien { background: rgba(16, 185, 129, 0.1); color: #d1fae5; }
+        .det-resp.bien span { color: var(--verde); }
+        .det-resp.mal { background: rgba(239, 68, 68, 0.1); color: #fee2e2; }
+        .det-resp.mal span { color: #f87171; }
+        .det-nota { font-size: 12px; color: var(--text-muted); margin: 4px 0 14px; line-height: 1.5; }
+        .det-cargando { text-align: center; padding: 50px 10px; color: var(--text-muted); font-size: 14px; }
+
+        @media (max-width: 640px) {
+            .det-bloque { grid-template-columns: minmax(0, 1fr) 70px 50px; }
+            .det-resp { grid-template-columns: 1fr; gap: 2px; }
+            .main-content { padding: 16px; }
+        }
+
+        /* ======================================================== */
+        /* BOTÓN "GESTIONAR WHITELIST"                               */
+        /* ======================================================== */
+        .btn-gestionar {
+            position: relative; overflow: hidden;
+            display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+            padding: 10px 18px; border: none; border-radius: 10px; cursor: pointer;
+            font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap;
+            background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.28);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+        /* Brillo que cruza el botón al pasar el ratón */
+        .btn-gestionar::after {
+            content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%;
+            background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transform: skewX(-20deg); pointer-events: none;
+        }
+        .btn-gestionar:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(239, 68, 68, 0.45); filter: brightness(1.08); }
+        .btn-gestionar:hover::after { animation: btnBrillo 0.75s ease; }
+        .btn-gestionar:active { transform: translateY(0) scale(0.98); }
+        .btn-gestionar:disabled { opacity: 0.55; cursor: not-allowed; transform: none; filter: none; box-shadow: none; }
+        .btn-gestionar:hover i.fa-key { animation: llaveGiro 0.6s ease; }
+        @keyframes btnBrillo { to { left: 130%; } }
+        @keyframes llaveGiro { 0%, 100% { transform: rotate(0); } 40% { transform: rotate(-28deg); } 70% { transform: rotate(14deg); } }
+
+        /* ======================================================== */
+        /* ÚLTIMAS WHITELIST OTORGADAS                               */
+        /* ======================================================== */
+
+        /* Pestañas: Todas / Por test / A mano. El fondo de la activa se desliza. */
+        .ot-tabs { position: relative; display: inline-flex; padding: 4px; border-radius: 11px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); }
+        .ot-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border: none; border-radius: 8px; background: none; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-muted); white-space: nowrap; transition: color 0.25s ease; }
+        .ot-tab:hover, .ot-tab.activo { color: #fff; }
+        .ot-tab span { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); font-size: 11px; font-weight: 700; text-align: center; }
+        .ot-tab-ind { position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 8px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.45); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), width 0.4s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; }
+
+        .ot-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 14px; }
+
+        /* Tarjeta de una whitelist otorgada. --tono: verde = aprobada en el test, ámbar = entregada a mano */
+        .ot-card {
+            --tono: 16, 185, 129;
+            position: relative; display: flex; align-items: center; gap: 16px; min-width: 0;
+            padding: 16px 18px 16px 21px; border-radius: 14px; overflow: hidden;
+            background: linear-gradient(135deg, rgba(var(--tono), 0.08), rgba(255, 255, 255, 0.015) 55%);
+            border: 1px solid rgba(var(--tono), 0.22);
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .ot-card.manual { --tono: 245, 158, 11; flex-direction: column; align-items: stretch; gap: 12px; }
+        .ot-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: rgb(var(--tono)); }
+        .ot-card:hover { transform: translateY(-3px); border-color: rgba(var(--tono), 0.55); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35), 0 0 24px rgba(var(--tono), 0.12); }
+
+        /* Entrada escalonada: solo la primera vez que aparece cada tarjeta */
+        .ot-card.entra { animation: otEntra 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards; animation-delay: calc(var(--i, 0) * 70ms); }
+        @keyframes otEntra { from { opacity: 0; transform: translateY(18px) scale(0.97); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
+        /* La que se acaba de otorgar parpadea un momento para localizarla */
+        .ot-card.nueva { animation: otEntra 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards, otPulso 1.3s ease 0.6s 2; }
+        @keyframes otPulso { 0%, 100% { box-shadow: 0 0 0 0 rgba(var(--tono), 0); } 50% { box-shadow: 0 0 0 4px rgba(var(--tono), 0.35), 0 0 34px rgba(var(--tono), 0.3); } }
+
+        /* Anillo con el porcentaje de acierto (se dibuja al entrar) */
+        .ot-anillo { position: relative; width: 66px; height: 66px; flex-shrink: 0; }
+        .ot-anillo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ot-anillo circle { fill: none; stroke-width: 5; }
+        .ot-anillo .pista { stroke: rgba(255, 255, 255, 0.08); }
+        .ot-anillo .valor { stroke: var(--verde); stroke-linecap: round; filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.5)); }
+        .ot-card.entra .ot-anillo .valor { animation: otAnillo 1.2s cubic-bezier(0.16, 1, 0.3, 1) backwards; animation-delay: calc(var(--i, 0) * 70ms + 250ms); }
+        @keyframes otAnillo { from { stroke-dasharray: 0 100; } }
+        .ot-anillo b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; color: #fff; }
+        .ot-anillo b small { font-size: 10px; font-weight: 700; color: var(--text-muted); margin-left: 1px; }
+
+        .ot-cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+        .ot-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+        .ot-tipo { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: rgb(var(--tono)); }
+        .ot-cab-der { display: inline-flex; align-items: center; gap: 10px; }
+        .ot-card time { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+        .ot-nombre { font-size: 15px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ot-id { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; max-width: 100%; padding: 0; border: none; background: none; cursor: pointer; font-family: inherit; font-size: 11.5px; font-weight: 500; color: var(--text-muted); font-variant-numeric: tabular-nums; transition: color 0.2s ease; }
+        .ot-id:hover { color: #fff; }
+        .ot-id.sin { cursor: default; font-style: italic; }
+        .ot-datos { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 3px; font-size: 12.5px; color: var(--text-muted); }
+        .ot-datos b { color: #fff; font-weight: 700; }
+        .ot-acciones { display: flex; gap: 6px; flex-shrink: 0; }
+        .ot-card.auto .ot-acciones { flex-direction: column; }
+        .ot-acciones .action-icon-btn { width: 30px; height: 30px; }
+
+        /* Entrega a mano: quien la da -> quien la recibe */
+        .ot-entrega { display: grid; grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr); align-items: center; gap: 10px; }
+        .ot-persona { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .ot-persona > div { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        .ot-persona small { font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .ot-persona b { font-size: 13.5px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ot-persona b.vacio { color: var(--text-muted); font-weight: 500; }
+        .ot-avatar { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 13px; font-weight: 800; color: #fff; background: hsl(var(--h, 350) 55% 40%); border: 2px solid rgba(255, 255, 255, 0.14); }
+        .ot-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Flecha de rayas que "fluyen" hacia quien recibe, con una llave en medio */
+        .ot-flecha { position: relative; height: 24px; }
+        .ot-flecha::before { content: ''; position: absolute; left: 0; right: 7px; top: 50%; height: 2px; margin-top: -1px; background: repeating-linear-gradient(90deg, rgba(var(--tono), 0.85) 0 6px, transparent 6px 12px); }
+        .ot-flecha::after { content: ''; position: absolute; right: 0; top: 50%; margin-top: -5px; border-left: 8px solid rgb(var(--tono)); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+        .ot-flecha i { position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #1a1206; background: rgb(var(--tono)); box-shadow: 0 0 12px rgba(var(--tono), 0.6); }
+        .ot-card.entra .ot-flecha::before { animation: otFlujo 0.6s linear 4; }
+        .ot-card.entra .ot-flecha i { animation: otLlave 0.9s cubic-bezier(0.34, 1.4, 0.64, 1) backwards; animation-delay: calc(var(--i, 0) * 70ms + 300ms); }
+        .ot-card:hover .ot-flecha::before, .gw-preview .ot-flecha::before { animation: otFlujo 0.6s linear infinite; }
+        @keyframes otFlujo { to { background-position: 12px 0; } }
+        @keyframes otLlave { from { left: 4px; opacity: 0; transform: scale(0.5) rotate(-120deg); } }
+
+        .ot-motivo { padding: 10px 12px; border-radius: 10px; background: rgba(0, 0, 0, 0.24); border-left: 2px solid rgba(var(--tono), 0.65); font-size: 13px; line-height: 1.5; color: #e5e7eb; overflow-wrap: anywhere; }
+        .ot-motivo small { display: block; margin-bottom: 2px; font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .ot-motivo.vacio { color: var(--text-muted); font-style: italic; }
+
+        .ot-vacio { grid-column: 1 / -1; padding: 34px 20px; text-align: center; color: var(--text-muted); font-size: 13.5px; line-height: 1.6; }
+        .ot-vacio i { display: block; margin-bottom: 10px; font-size: 26px; color: rgba(239, 68, 68, 0.5); }
+        .ot-mas { display: flex; justify-content: center; margin-top: 16px; }
+        .ot-mas button { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); color: #fff; padding: 9px 20px; border-radius: 999px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease; }
+        .ot-mas button:hover { background: rgba(239, 68, 68, 0.18); border-color: rgba(239, 68, 68, 0.5); transform: translateY(-2px); }
+
+        @media (max-width: 560px) {
+            .ot-entrega { grid-template-columns: 1fr; gap: 6px; }
+            /* En pantallas estrechas las dos personas van una debajo de otra y la flecha apunta hacia abajo */
+            .ot-flecha { width: 44px; margin: 10px 0 10px -3px; transform: rotate(90deg); }
+            .ot-card.auto { flex-wrap: wrap; }
+            .ot-card.auto .ot-acciones { flex-direction: row; width: 100%; justify-content: flex-end; }
+        }
+
+        /* ======================================================== */
+        /* VENTANA "GESTIONAR WHITELIST" (otorgar a mano)            */
+        /* ======================================================== */
+        .modal-box.gw-box { max-width: 580px; padding: 0; overflow-x: hidden; }
+        .modal-overlay.active .gw-box { animation: gwEntra 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes gwEntra { from { opacity: 0; transform: translateY(28px) scale(0.93); } to { opacity: 1; transform: none; } }
+
+        .gw-head {
+            --tono: 245, 158, 11;
+            padding: 22px 24px 20px; border-bottom: 1px solid var(--border-color);
+            background: radial-gradient(120% 150% at 0% 0%, rgba(239, 68, 68, 0.22), transparent 60%),
+                        radial-gradient(120% 150% at 100% 0%, rgba(236, 72, 153, 0.16), transparent 60%);
+        }
+        .gw-head-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+        .gw-head h3 { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 5px; }
+        .gw-head h3 i { color: var(--accent-red); }
+        .gw-head p { font-size: 13px; line-height: 1.5; color: var(--text-muted); max-width: 46ch; }
+        .gw-cerrar { width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; cursor: pointer; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.09); color: var(--text-muted); font-size: 14px; transition: background 0.2s ease, color 0.2s ease, transform 0.3s ease; }
+        .gw-cerrar:hover { background: rgba(239, 68, 68, 0.25); color: #fff; transform: rotate(90deg); }
+        .gw-preview { padding: 12px 14px; border-radius: 12px; background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.07); transition: border-color 0.4s ease; }
+        .gw-preview.hecho { --tono: 16, 185, 129; border-color: rgba(16, 185, 129, 0.5); }
+
+        .gw-form { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+        /* Los campos entran uno detrás de otro cada vez que se abre la ventana */
+        .modal-overlay.active .gw-anim { animation: fadeInUp 0.5s cubic-bezier(0.25, 1, 0.5, 1) backwards; animation-delay: calc(var(--i, 0) * 70ms + 140ms); }
+        .gw-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .gw-campo { min-width: 0; }
+        .gw-campo label { display: block; margin-bottom: 6px; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .gw-input { width: 100%; padding: 11px 13px; border-radius: 10px; outline: none; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); color: #fff; font-family: inherit; font-size: 13.5px; line-height: 1.5; transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease; }
+        .gw-input::placeholder { color: #6b7280; }
+        .gw-input:focus { border-color: var(--accent-red); background: rgba(239, 68, 68, 0.04); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }
+        .gw-input[readonly] { opacity: 0.7; cursor: default; }
+        .gw-input.mal { border-color: var(--ambar); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14); }
+        textarea.gw-input { resize: vertical; min-height: 82px; }
+        .gw-contador { float: right; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: none; letter-spacing: 0; }
+
+        .gw-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .gw-chip { padding: 5px 11px; border-radius: 999px; cursor: pointer; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); font-family: inherit; font-size: 12px; font-weight: 600; transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease; }
+        .gw-chip:hover { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.5); color: #fff; transform: translateY(-1px); }
+
+        /* Lo que se sabe del usuario según su ID */
+        .gw-estado { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; color: #e5e7eb; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .gw-estado > i { margin-top: 2px; font-size: 15px; color: var(--text-muted); }
+        .gw-estado > div { flex: 1; min-width: 0; }
+        .gw-estado strong { color: #fff; }
+        .gw-estado.ok { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.35); }
+        .gw-estado.ok > i { color: var(--verde); }
+        .gw-estado.aviso { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.35); }
+        .gw-estado.aviso > i { color: var(--ambar); }
+        .modal-overlay.active .gw-estado.cambia { animation: gwCambia 0.4s ease; }
+        @keyframes gwCambia { from { opacity: 0; transform: translateY(-5px); } }
+        .gw-retirar { margin-top: 9px; display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 8px; cursor: pointer; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-family: inherit; font-size: 12.5px; font-weight: 600; transition: background 0.2s ease, color 0.2s ease; }
+        .gw-retirar:hover { background: rgba(239, 68, 68, 0.32); color: #fff; }
+
+        .gw-error { display: flex; gap: 10px; padding: 11px 14px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: #fecaca; font-size: 13px; line-height: 1.5; animation: gwTemblor 0.4s ease; }
+        .gw-error i { margin-top: 3px; color: #f87171; }
+        @keyframes gwTemblor { 0%, 100% { transform: none; } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+
+        .gw-pie { display: flex; gap: 10px; margin-top: 2px; }
+        .gw-pie .modal-btn { padding: 12px; border-radius: 10px; }
+        .gw-pie .btn-gestionar { flex: 2; padding: 12px; font-size: 13.5px; }
+        .gw-pie .btn-gestionar.cargando { pointer-events: none; }
+
+        /* Confirmación: círculo y "check" que se dibujan */
+        .gw-exito { padding: 34px 24px 38px; text-align: center; }
+        .gw-check { width: 92px; height: 92px; margin: 0 auto 16px; position: relative; }
+        .gw-check::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(16, 185, 129, 0.6); animation: gwOnda 1.4s ease-out 0.5s 2 backwards; }
+        .gw-check svg { width: 100%; height: 100%; }
+        .gw-check circle { fill: rgba(16, 185, 129, 0.12); stroke: var(--verde); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 214; stroke-dashoffset: 214; transform: rotate(-90deg); transform-origin: 50% 50%; animation: gwTrazo 0.7s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+        .gw-check path { fill: none; stroke: var(--verde); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 50; stroke-dashoffset: 50; animation: gwTrazo 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.55s forwards; }
+        @keyframes gwTrazo { to { stroke-dashoffset: 0; } }
+        @keyframes gwOnda { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.5); opacity: 0; } }
+        .gw-exito h4 { font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 6px; animation: fadeInUp 0.5s ease 0.5s backwards; }
+        .gw-exito p { max-width: 42ch; margin: 0 auto; font-size: 13.5px; line-height: 1.6; color: var(--text-muted); animation: fadeInUp 0.5s ease 0.65s backwards; }
+        .gw-exito p strong { color: #fff; }
+        .gw-exito .gw-aviso-servidor { margin-top: 14px; padding: 10px 14px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); color: #fde68a; font-size: 12.5px; }
+
+        @media (max-width: 560px) {
+            .gw-fila { grid-template-columns: 1fr; }
+            .gw-form { padding: 18px 18px 20px; }
+            .gw-head { padding: 18px; }
+        }
+
+        /* Quien prefiera menos movimiento: sin animaciones */
+        @media (prefers-reduced-motion: reduce) {
+            .ot-card, .ot-card *, .ot-card *::before, .gw-box, .gw-box *, .gw-box *::before, .btn-gestionar, .btn-gestionar *, .btn-gestionar::after, .ot-tab-ind {
+                animation: none !important; transition: none !important;
+            }
+            .gw-check circle, .gw-check path { stroke-dashoffset: 0; }
+        }
+
+        /* ======================================================== */
+        /* MÁXIMA ANIMACIÓN 3D E INMERSIÓN - ACCESO DENEGADO        */
+        /* ======================================================== */
+        @keyframes entry3DExplosion { 0% { opacity: 0; transform: scale(0.7) translateZ(-300px) rotateX(35deg); } 100% { opacity: 1; transform: scale(1) translateZ(0px) rotateX(0deg); } }
+        @keyframes neonCycle3D {
+            0% { border-color: rgba(239, 68, 68, 0.6); box-shadow: 0 30px 100px rgba(0,0,0,0.95), 0 0 50px rgba(239, 68, 68, 0.25), inset 0 0 25px rgba(239, 68, 68, 0.15); }
+            33% { border-color: rgba(168, 85, 247, 0.6); box-shadow: 0 30px 100px rgba(0,0,0,0.95), 0 0 50px rgba(168, 85, 247, 0.3), inset 0 0 25px rgba(168, 85, 247, 0.15); }
+            66% { border-color: rgba(236, 72, 153, 0.6); box-shadow: 0 30px 100px rgba(0,0,0,0.95), 0 0 50px rgba(236, 72, 153, 0.3), inset 0 0 25px rgba(236, 72, 153, 0.15); }
+            100% { border-color: rgba(239, 68, 68, 0.6); box-shadow: 0 30px 100px rgba(0,0,0,0.95), 0 0 50px rgba(239, 68, 68, 0.25), inset 0 0 25px rgba(239, 68, 68, 0.15); }
+        }
+        @keyframes liquidShimmer3D { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes radarSpin3D { 0% { transform: rotate(0deg) rotateX(10deg); } 100% { transform: rotate(360deg) rotateX(10deg); } }
+        @keyframes pulseCore3D { 0%, 100% { transform: scale(1) translateZ(40px); filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.7)); } 50% { transform: scale(1.1) translateZ(60px); filter: drop-shadow(0 0 40px rgba(239, 68, 68, 1)); } }
+        @keyframes bgFloatingOrb1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(80px, -60px) scale(1.3); } }
+        @keyframes bgFloatingOrb2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-90px, 70px) scale(1.4); } }
+    </style>
+</head>
+<body>
+
+    <div class="grid-background"></div>
+
+    <!-- CONTENEDOR DE ACCESO DENEGADO CON INMERSIÓN 3D MÁXIMA -->
+    <div id="accessDeniedContainer" style="display: none; position: fixed; inset: 0; background: radial-gradient(circle at 50% 25%, #160a2b 0%, #040207 92%); z-index: 999999; align-items: center; justify-content: center; padding: 24px; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; perspective: 1600px;">
+        
+        <!-- Orbes Lumínicos 3D de Fondo -->
+        <div style="position: absolute; top: 10vh; left: 15vw; width: 400px; height: 400px; background: radial-gradient(circle, rgba(239, 68, 68, 0.09) 0%, transparent 70%); border-radius: 50%; pointer-events: none; animation: bgFloatingOrb1 9s infinite ease-in-out;"></div>
+        <div style="position: absolute; bottom: 10vh; right: 15vw; width: 450px; height: 450px; background: radial-gradient(circle, rgba(168, 85, 247, 0.09) 0%, transparent 70%); border-radius: 50%; pointer-events: none; animation: bgFloatingOrb2 11s infinite ease-in-out;"></div>
+
+        <!-- TARJETA PRINCIPAL 3D INTERACTIVA -->
+        <div id="deniedCard3D" style="background: linear-gradient(155deg, rgba(24, 15, 40, 0.97) 0%, rgba(8, 5, 14, 0.99) 100%); border-radius: 40px; padding: 60px 48px; max-width: 680px; width: 100%; text-align: center; backdrop-filter: blur(30px); position: relative; z-index: 2; transform-style: preserve-3d; will-change: transform; transition: transform 0.15s cubic-bezier(0.03, 0.98, 0.52, 0.99), box-shadow 0.3s ease; animation: entry3DExplosion 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards, neonCycle3D 7s infinite linear;">
+            
+            <div style="position: absolute; inset: 0; border-radius: 40px; pointer-events: none; border: 2px solid rgba(239, 68, 68, 0.6); box-sizing: border-box;"></div>
+
+            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%) translateZ(30px); width: 200px; height: 5px; background: linear-gradient(90deg, transparent, #ec4899, #8b5cf6, transparent); border-radius: 0 0 6px 6px; box-shadow: 0 0 25px #ec4899;"></div>
+
+            <div style="transform: translateZ(25px); display: inline-flex; align-items: center; gap: 8px; background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.4); padding: 7px 20px; border-radius: 20px; color: #f87171; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.8px; margin-bottom: 28px; box-shadow: 0 0 25px rgba(239, 68, 68, 0.2);">
+                <i class="fa-solid fa-triangle-exclamation"></i> Protocolo de Seguridad Activo
+            </div>
+
+            <div style="position: relative; width: 110px; height: 110px; margin: 0 auto 28px auto; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; transform: translateZ(50px);">
+                <div style="position: absolute; inset: -8px; border-radius: 50%; border: 2px dashed rgba(236, 72, 153, 0.5); animation: radarSpin3D 10s linear infinite;"></div>
+                <div style="position: absolute; inset: -18px; border-radius: 50%; border: 1px solid rgba(168, 85, 247, 0.3); animation: radarSpin3D 15s linear infinite reverse;"></div>
+                
+                <div style="width: 104px; height: 104px; background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(168, 85, 247, 0.12)); color: #f87171; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 44px; border: 1px solid rgba(239, 68, 68, 0.7); animation: pulseCore3D 3s infinite ease-in-out;">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+            </div>
+
+            <h1 style="transform: translateZ(40px); font-size: 36px; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.5px; background: linear-gradient(135deg, #fff 15%, #f472b6 45%, #c084fc 75%, #fff 100%); background-size: 300% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: liquidShimmer3D 4s linear infinite;">ACCESO NO AUTORIZADO</h1>
+            
+            <p style="transform: translateZ(30px); color: #94a3b8; font-size: 16px; line-height: 1.7; margin-bottom: 34px; max-width: 550px; margin-left: auto; margin-right: auto;">
+                Tu perfil actual carece de privilegios y no consta en los registros como <strong style="color: #f87171; background: rgba(239, 68, 68, 0.18); padding: 2px 8px; border-radius: 6px; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.35);">STAFF</strong> dentro de este sistema de control central.
+            </p>
+
+            <div style="transform: translateZ(35px); display: flex; flex-direction: column; gap: 14px; text-align: left; margin-bottom: 38px;">
+                <div style="background: rgba(15, 10, 28, 0.9); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 18px; padding: 18px 22px; display: flex; align-items: center; gap: 16px; transition: all 0.25s ease;" onmouseover="this.style.borderColor='rgba(236, 72, 153, 0.7)'; this.style.transform='translateZ(45px) translateX(6px)'; this.style.background='rgba(25, 15, 42, 0.95)';" onmouseout="this.style.borderColor='rgba(168, 85, 247, 0.3)'; this.style.transform='translateZ(35px) translateX(0)'; this.style.background='rgba(15, 10, 28, 0.9)';">
+                    <div style="width: 44px; height: 44px; background: rgba(168, 85, 247, 0.18); color: #c084fc; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1px solid rgba(168, 85, 247, 0.45); box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <div style="font-size: 14.5px; color: #cbd5e1; line-height: 1.5;">
+                        <strong style="color: #fff; display: block; margin-bottom: 2px;">¿Eres miembro del equipo staff?</strong>
+                        Comunícate con el <strong style="color: #f472b6;">owner</strong> para que valide y configure tu acceso de manera oficial en el panel.
+                    </div>
+                </div>
+
+                <div style="background: rgba(15, 10, 28, 0.9); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 18px; padding: 18px 22px; display: flex; align-items: center; gap: 16px; transition: all 0.25s ease;" onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.7)'; this.style.transform='translateZ(45px) translateX(6px)'; this.style.background='rgba(18, 25, 46, 0.95)';" onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.transform='translateZ(35px) translateX(0)'; this.style.background='rgba(15, 10, 28, 0.9)';">
+                    <div style="width: 44px; height: 44px; background: rgba(59, 130, 246, 0.18); color: #60a5fa; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1px solid rgba(59, 130, 246, 0.45); box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);">
+                        <i class="fa-solid fa-house-laptop"></i>
+                    </div>
+                    <div style="font-size: 14.5px; color: #cbd5e1; line-height: 1.5;">
+                        <strong style="color: #fff; display: block; margin-bottom: 2px;">¿Usuario general?</strong>
+                        Por motivos de seguridad, debes regresar de inmediato a la página principal del servidor.
+                    </div>
+                </div>
+            </div>
+
+            <a href="/home.html" style="transform: translateZ(60px); background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%); color: #fff; text-decoration: none; padding: 18px 42px; border-radius: 16px; font-weight: 700; font-size: 16px; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 15px 40px rgba(236, 72, 153, 0.5); transition: all 0.25s ease;" onmouseover="this.style.transform='translateZ(75px) scale(1.04)'; this.style.filter='brightness(1.15)'; this.style.boxShadow='0 22px 55px rgba(236, 72, 153, 0.7)';" onmouseout="this.style.transform='translateZ(60px) scale(1)'; this.style.filter='none'; this.style.boxShadow='0 15px 40px rgba(236, 72, 153, 0.5)';">
+                <i class="fa-solid fa-house"></i> Volver a la página principal
+            </a>
+        </div>
+    </div>
+
+    <div id="successNotification">
+        <div class="success-icon-badge" id="successIconBadge">
+            <i class="fa-solid fa-check" id="successIconElement"></i>
+        </div>
+        <div class="success-message-text" id="successNotificationText">Acción realizada correctamente...</div>
+        <div class="success-tag-pill" id="successNotificationTag">ACTUALIZADO</div>
+    </div>
+
+    <!-- Modal: detalle de un intento (ojito) -->
+    <div class="modal-overlay" id="fichaModal">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="fichaTitulo">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px;">
+                <h3 id="fichaTitulo" style="font-size: 18px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-id-card-clip" style="color: var(--accent-red);"></i> <span id="fichaTituloTexto">Detalle del intento</span>
+                </h3>
+                <button onclick="closeFichaModal()" aria-label="Cerrar" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="fichaContentContainer">
+                <!-- Inyectado dinámicamente -->
+            </div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button class="modal-btn modal-btn-cancel" onclick="closeFichaModal()" style="width: 100%;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: gestionar whitelist (otorgarla a mano, aunque no se haya hecho el test) -->
+    <div class="modal-overlay" id="gestionModal">
+        <div class="modal-box gw-box" role="dialog" aria-modal="true" aria-labelledby="gwTituloTexto">
+            <div class="gw-head">
+                <div class="gw-head-top">
+                    <div>
+                        <h3><i class="fa-solid fa-key"></i> <span id="gwTituloTexto">Gestionar whitelist</span></h3>
+                        <p id="gwSubtitulo"></p>
+                    </div>
+                    <button type="button" class="gw-cerrar" onclick="cerrarGestion()" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <!-- Quién la entrega -> quién la recibe (se va rellenando al escribir) -->
+                <div class="ot-entrega gw-preview" id="gwPreview"></div>
+            </div>
+
+            <form class="gw-form" id="gwForm" onsubmit="gwEnviar(event)" novalidate>
+                <div class="gw-fila gw-anim" style="--i: 0;">
+                    <div class="gw-campo">
+                        <label for="gwNombre">Nombre de Discord</label>
+                        <input type="text" id="gwNombre" class="gw-input" maxlength="40" autocomplete="off" placeholder="Ej. AlexGamer">
+                    </div>
+                    <div class="gw-campo">
+                        <label for="gwId">ID de Discord</label>
+                        <input type="text" id="gwId" class="gw-input" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="Ej. 384920192837465920">
+                    </div>
+                </div>
+
+                <!-- Qué se sabe de ese usuario: si ya tiene la whitelist, si ha suspendido el test... -->
+                <div class="gw-estado gw-anim" id="gwEstado" style="--i: 1;" aria-live="polite"></div>
+
+                <div class="gw-campo gw-anim" id="gwMotivoCampo" style="--i: 2;">
+                    <label for="gwMotivo">Motivo de la entrega <span class="gw-contador" id="gwContador">0 / 300</span></label>
+                    <textarea id="gwMotivo" class="gw-input" rows="3" maxlength="300" placeholder="Explica por qué se le da la whitelist a mano"></textarea>
+                    <div class="gw-chips" id="gwChips"></div>
+                </div>
+
+                <div class="gw-error" id="gwError" role="alert" hidden></div>
+
+                <div class="gw-pie gw-anim" style="--i: 3;">
+                    <button type="button" class="modal-btn modal-btn-cancel" onclick="cerrarGestion()">Cancelar</button>
+                    <button type="submit" class="btn-gestionar" id="gwEnviarBtn"><i class="fa-solid fa-key"></i> <span>Otorgar whitelist</span></button>
+                </div>
+            </form>
+
+            <!-- Confirmación animada -->
+            <div class="gw-exito" id="gwExito" hidden></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-logo-title" style="display: flex; align-items: center; gap: 10px;">
+                    <span class="server-main-title">
+                        <i class="fa-solid fa-shield-halved" style="color: var(--accent-red); margin-right: 8px;"></i> ClickSense
+                    </span>
+                </div>
+                <button class="sidebar-toggle-icon" id="sidebarToggleBtn">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <!-- Gestionado dinámicamente por guards.js -->
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-mini">
+                    <div class="avatar-placeholder" id="userAvatarContainer">
+                        <span id="userAvatarFallback">?</span>
+                    </div>
+                    <div class="user-info">
+                        <span class="username" id="userNameDisplay">Usuario</span>
+                        <span class="user-handle" id="userHandleDisplay">@tag</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <button class="sidebar-reveal-trigger" id="sidebarRevealBtn" title="Abrir menú">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <main class="main-content">
+            
+            <header class="top-action-bar animate-fade-down">
+                <div class="breadcrumb"><i class="fa-solid fa-house"></i> / Administración / Gestión de Whitelist</div>
+                <div class="top-acciones">
+                    <button type="button" class="btn-gestionar" onclick="abrirGestion()">
+                        <i class="fa-solid fa-key"></i> Gestionar whitelist
+                    </button>
+                    <button onclick="sincronizarManual()" class="action-icon-btn" title="Recargar datos manualmente" style="width: auto; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; gap: 6px; height: 38px;">
+                        <i class="fa-solid fa-rotate"></i> Sincronizar
+                    </button>
+                </div>
+            </header>
+
+            <div class="welcome-banner-card animate-fade-up">
+                <div class="welcome-avatar"><i class="fa-solid fa-id-card-clip"></i></div>
+                <div class="welcome-text-content">
+                    <h1>Control del test de whitelist</h1>
+                    <p>Cada intento del test de normativa queda registrado aquí: la nota, los aciertos y fallos, y qué respondió el usuario en cada pregunta. La corrección es automática, pero puedes otorgar o retirar una whitelist a mano.</p>
+                </div>
+            </div>
+
+            <div class="metrics-grid animate-fade-up delay-1">
+                <div class="metric-card">
+                    <span class="metric-card-title"><i class="fa-solid fa-database" style="color: #a855f7; margin-right: 6px;"></i> Intentos totales</span>
+                    <span class="metric-card-value" id="metricTotal">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-card-title"><i class="fa-solid fa-circle-check" style="color: #10b981; margin-right: 6px;"></i> Aprobados</span>
+                    <span class="metric-card-value" id="metricAprobadas" style="color: #10b981;">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-card-title"><i class="fa-solid fa-circle-xmark" style="color: #ef4444; margin-right: 6px;"></i> Suspendidos</span>
+                    <span class="metric-card-value" id="metricRechazadas" style="color: #ef4444;">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-card-title"><i class="fa-solid fa-chart-simple" style="color: #f59e0b; margin-right: 6px;"></i> Nota media</span>
+                    <span class="metric-card-value" id="metricMedia">0 %</span>
+                </div>
+            </div>
+
+            <!-- ==================================================== -->
+            <!-- ÚLTIMAS WHITELIST OTORGADAS: por test y a mano        -->
+            <!-- ==================================================== -->
+            <div class="admin-card animate-fade-up delay-2" id="otorgadasCard">
+                <div class="table-header-toolbar">
+                    <div class="toolbar-title-area">
+                        <h3><i class="fa-solid fa-key" style="color: var(--accent-red);"></i> Últimas whitelist otorgadas</h3>
+                        <p id="otSubtitulo">Las aprobadas en el test y las entregadas a mano. Las más recientes primero.</p>
+                    </div>
+                    <div class="toolbar-controls">
+                        <div class="ot-tabs" id="otTabs" role="group" aria-label="Filtrar las whitelist otorgadas">
+                            <span class="ot-tab-ind" id="otTabInd"></span>
+                            <button type="button" class="ot-tab activo" data-ot="todas" aria-pressed="true">Todas <span id="otNTodas">0</span></button>
+                            <button type="button" class="ot-tab" data-ot="auto" aria-pressed="false"><i class="fa-solid fa-graduation-cap"></i> Por test <span id="otNAuto">0</span></button>
+                            <button type="button" class="ot-tab" data-ot="manual" aria-pressed="false"><i class="fa-solid fa-hand-holding-heart"></i> A mano <span id="otNManual">0</span></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="ot-lista" id="otLista">
+                    <!-- Inyectado dinámicamente -->
+                </div>
+                <div class="ot-mas" id="otMas" hidden>
+                    <button type="button" id="otMasBtn">Ver más</button>
+                </div>
+            </div>
+
+            <div class="admin-card animate-fade-up delay-2">
+                <div class="table-header-toolbar">
+                    <div class="toolbar-title-area">
+                        <h3><i class="fa-solid fa-clipboard-user" style="color: var(--accent-red);"></i> Registro de intentos</h3>
+                        <p id="toolbarSubtitulo">Los más recientes primero.</p>
+                    </div>
+                    <div class="toolbar-controls">
+                        <div class="search-box-wrapper">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="tableSearchInput" class="search-input" placeholder="Buscar por usuario o ID..." oninput="renderTableData()">
+                        </div>
+                        <div class="filter-dropdown-container">
+                            <button class="filter-main-btn" onclick="toggleFilterMenu()">
+                                <i class="fa-solid fa-filter"></i> <span id="filterLabel">Todos</span> <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i>
+                            </button>
+                            <div class="filter-dropdown-menu" id="filterDropdownMenu">
+                                <div class="filter-option" onclick="applyStatusFilter('Todos')"><i class="fa-solid fa-list" style="color: #a855f7;"></i> Todos</div>
+                                <div class="filter-option" onclick="applyStatusFilter('Aprobado')"><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Aprobados</div>
+                                <div class="filter-option" onclick="applyStatusFilter('Rechazado')"><i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i> Suspendidos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="org-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuario Discord</th>
+                                <th>Nota</th>
+                                <th>Aciertos / Fallos</th>
+                                <th>Intento</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="whitelistTableBody">
+                            <!-- Inyectado dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        let whitelistList = [];
+        let currentStatusFilter = 'Todos';
+        let errorDeCarga = '';
+
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const porcentajeTxt = n => String(Math.round((Number(n) || 0) * 10) / 10).replace('.', ',') + ' %';
+
+        function motivoError(status) {
+            if (status === 401) return 'No hay sesión iniciada en el servidor. Vuelve a iniciar sesión con Discord.';
+            if (status === 403) return 'Tu cuenta no tiene permisos de staff en el servidor.';
+            if (status === 404 || status === 405) return 'El servidor no tiene instalado el test de whitelist (whitelist_api.py y las dos líneas en main.py).';
+            return 'El servidor ha respondido con un error (' + status + ').';
+        }
+
+        function fechaLarga(iso) {
+            if (!iso) return 'No registrada';
+            const d = new Date(iso);
+            if (isNaN(d)) return 'No registrada';
+            return new Intl.DateTimeFormat('es-ES', {
+                timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            }).format(d);
+        }
+
+        function duracionTxt(seg) {
+            seg = Number(seg) || 0;
+            if (seg <= 0) return 'No registrada';
+            const m = Math.floor(seg / 60), s = seg % 60;
+            return m ? `${m} min ${s} s` : `${s} s`;
+        }
+
+        // Whitelist entregada a mano a alguien que NO ha hecho el test: no es un intento,
+        // así que no cuenta en "Intentos totales" ni en la nota media.
+        const esSinTest = w => w.sinTest === true || (!(Number(w.total) > 0) && !!w.revisadoPor);
+
+        // Aprobado / Suspendido (corrección automática) / Rechazado (lo cambió el staff)
+        function estadoDe(w) {
+            const aprobado = w.status === 'Aprobado';
+            return {
+                clase: aprobado ? 'Aprobado' : 'Rechazado',
+                texto: aprobado ? 'Aprobado' : (w.revisadoPor ? 'Rechazado' : 'Suspendido'),
+                manual: !!w.revisadoPor
+            };
+        }
+
+        // Quién está usando el panel (la sesión de Discord guardada en el navegador)
+        function yo() {
+            let u = {};
+            try { u = JSON.parse(localStorage.getItem('discord_user') || '{}') || {}; } catch (e) {}
+            return {
+                nombre: String(u.displayName || u.username || '').trim() || 'Tú',
+                id: String(u.id || u.discordId || '').trim(),
+                avatar: u.avatarUrl || ''
+            };
+        }
+
+        /**
+         * ------------------------------------------------------------------
+         * Los intentos se leen de /api/whitelist. El test lo corrige y lo
+         * registra el servidor cuando el usuario lo termina en whitelist.html;
+         * desde aquí se consultan y, si hace falta, se otorga o se retira una
+         * whitelist a mano.
+         * ------------------------------------------------------------------
+         */
+        async function loadWhitelistFromStorage() {
+            try {
+                const response = await fetch('/api/whitelist', { cache: 'no-store', credentials: 'same-origin' });
+                if (!response.ok) throw new Error(motivoError(response.status));
+                const data = await response.json();
+                whitelistList = Array.isArray(data) ? data : [];
+                errorDeCarga = '';
+            } catch (e) {
+                console.error("Error al cargar la whitelist desde /api/whitelist:", e);
+                errorDeCarga = e.message === 'Failed to fetch' ? 'No se ha podido conectar con el servidor.' : e.message;
+            }
+            pintarTodo();
+            return !errorDeCarga;
+        }
+
+        // Tabla de intentos, contadores, whitelist otorgadas y (si está abierta) la ventana de gestión
+        function pintarTodo() {
+            renderTableData();
+            updateMetrics();
+            renderOtorgadas();
+            if (gw.abierta && !gw.enviando) gwActualizar();
+        }
+
+        async function sincronizarManual() {
+            const ok = await loadWhitelistFromStorage();
+            if (ok) showTopNotification('Datos recargados correctamente.', 'ACTUALIZADO', true);
+            else showTopNotification(esc(errorDeCarga), 'ERROR', false);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasAccess = await checkUserPermissions('Encargado de Whitelist\'s');
+            if (!hasAccess) {
+                const appContainer = document.querySelector('.app-container');
+                if (appContainer) appContainer.style.display = 'none';
+                const deniedContainer = document.getElementById('accessDeniedContainer');
+                if (deniedContainer) {
+                    deniedContainer.style.display = 'flex';
+                    
+                    const deniedCard = document.getElementById('deniedCard3D');
+                    if (deniedCard) {
+                        document.addEventListener('mousemove', (e) => {
+                            const rect = deniedCard.getBoundingClientRect();
+                            const x = e.clientX - rect.left - rect.width / 2;
+                            const y = e.clientY - rect.top - rect.height / 2;
+                            const rotateX = (-y / 18);
+                            const rotateY = (x / 18);
+                            deniedCard.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                        });
+                        document.addEventListener('mouseleave', () => {
+                            deniedCard.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                        });
+                    }
+                }
+                return;
+            }
+
+            loadDiscordSessionData();
+            initSidebar();
+            initOtorgadas();
+            initGestion();
+            await loadWhitelistFromStorage();
+            initGlobalClickHandlers();
+
+            // Refresco automático: los intentos llegan desde los navegadores de los
+            // usuarios, así que se consulta el servidor cada cierto tiempo.
+            setInterval(loadWhitelistFromStorage, 20000);
+
+            window.addEventListener('focus', () => {
+                loadWhitelistFromStorage();
+            });
+        });
+
+        function updateMetrics() {
+            // Solo cuentan los intentos reales del test (no las whitelist entregadas sin test)
+            const intentos = whitelistList.filter(w => !esSinTest(w));
+            const total = intentos.length;
+            const aprobadas = intentos.filter(w => w.status === 'Aprobado').length;
+            const media = total ? intentos.reduce((t, w) => t + (Number(w.porcentaje) || 0), 0) / total : 0;
+
+            document.getElementById('metricTotal').textContent = total;
+            document.getElementById('metricAprobadas').textContent = aprobadas;
+            document.getElementById('metricRechazadas').textContent = total - aprobadas;
+            document.getElementById('metricMedia').textContent = porcentajeTxt(media);
+
+            const usuarios = new Set(intentos.map(w => String(w.discordId))).size;
+            document.getElementById('toolbarSubtitulo').textContent = total
+                ? `${total} ${total === 1 ? 'intento' : 'intentos'} de ${usuarios} ${usuarios === 1 ? 'usuario' : 'usuarios'}. Los más recientes primero.`
+                : 'Los más recientes primero.';
+        }
+
+        async function loadDiscordSessionData() {
+            const storedUser = localStorage.getItem('discord_user');
+            const avatarContainer = document.getElementById('userAvatarContainer');
+            const userNameDisplay = document.getElementById('userNameDisplay');
+            const userHandleDisplay = document.getElementById('userHandleDisplay');
+            if (!storedUser) return;
+            try {
+                const discordUser = JSON.parse(storedUser);
+                if (userNameDisplay) userNameDisplay.textContent = discordUser.displayName || discordUser.username || "Usuario";
+                if (userHandleDisplay) userHandleDisplay.textContent = "@" + (discordUser.username || "discord");
+                if (avatarContainer && discordUser.avatarUrl) {
+                    avatarContainer.innerHTML = `<img src="${discordUser.avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                }
+            } catch(e) {}
+        }
+
+        function initSidebar() {
+            const toggleBtn = document.getElementById('sidebarToggleBtn');
+            const revealBtn = document.getElementById('sidebarRevealBtn');
+            const sidebar = document.getElementById('sidebar');
+            if (toggleBtn && revealBtn && sidebar) {
+                toggleBtn.addEventListener('click', () => sidebar.classList.add('collapsed'));
+                revealBtn.addEventListener('click', () => sidebar.classList.remove('collapsed'));
+            }
+        }
+
+        function toggleFilterMenu() {
+            document.getElementById('filterDropdownMenu').classList.toggle('active');
+        }
+
+        function applyStatusFilter(status) {
+            currentStatusFilter = status;
+            document.getElementById('filterDropdownMenu').classList.remove('active');
+            document.getElementById('filterLabel').textContent = { Todos: 'Todos', Aprobado: 'Aprobados', Rechazado: 'Suspendidos' }[status] || 'Todos';
+            renderTableData();
+        }
+
+        function initGlobalClickHandlers() {
+            window.addEventListener('click', (e) => {
+                if (!e.target.closest('.filter-dropdown-container')) {
+                    const menu = document.getElementById('filterDropdownMenu');
+                    if (menu) menu.classList.remove('active');
+                }
+                if (e.target.id === 'fichaModal') closeFichaModal();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (gw.abierta) cerrarGestion(); else closeFichaModal();
+            });
+        }
+
+        function filaVacia(texto) {
+            return `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 26px 20px;">${texto}</td></tr>`;
+        }
+
+        function renderTableData() {
+            const query = document.getElementById('tableSearchInput').value.toLowerCase().trim();
+            const tbody = document.getElementById('whitelistTableBody');
+
+            if (errorDeCarga) {
+                tbody.innerHTML = filaVacia(`<i class="fa-solid fa-triangle-exclamation" style="color: var(--ambar); margin-right: 8px;"></i>${esc(errorDeCarga)}`);
+                return;
+            }
+
+            const filtered = whitelistList.filter(w => {
+                const matchesSearch = !query ||
+                    String(w.usuario || '').toLowerCase().includes(query) ||
+                    String(w.discordId || '').toLowerCase().includes(query) ||
+                    String(w.id || '').toLowerCase().includes(query);
+                const matchesFilter = (currentStatusFilter === 'Todos' || w.status === currentStatusFilter);
+                return matchesSearch && matchesFilter;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = filaVacia(whitelistList.length === 0
+                    ? 'Todavía nadie ha hecho el test de whitelist.'
+                    : 'Ningún intento coincide con la búsqueda o el filtro.');
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(w => {
+                const est = estadoDe(w);
+                const sinTest = esSinTest(w);
+                const total = Number(w.total) || 0;
+                const aciertos = Number(w.aciertos) || 0;
+                const fallos = Number(w.fallos) || 0;
+                const pct = Number(w.porcentaje) || 0;
+                const supera = pct >= (Number(w.minimoPorcentaje) || 60);
+                const idArg = esc(JSON.stringify(String(w.id)));
+
+                const accion = w.status === 'Aprobado'
+                    ? `<button class="action-icon-btn reject-btn" onclick="changeStatus(${idArg}, 'Rechazado')" title="Retirar la whitelist" aria-label="Retirar la whitelist"><i class="fa-solid fa-xmark"></i></button>`
+                    : `<button class="action-icon-btn approve-btn" onclick="changeStatus(${idArg}, 'Aprobado')" title="Otorgar la whitelist a mano" aria-label="Otorgar la whitelist a mano"><i class="fa-solid fa-check"></i></button>`;
+
+                // Una whitelist entregada sin test no tiene nota, ni aciertos, ni respuestas que ver
+                const nota = sinTest
+                    ? `<span class="sin-test"><i class="fa-solid fa-hand-holding-heart"></i> Sin test</span>`
+                    : `<div class="nota-celda">
+                                <div class="nota-linea"><span>${aciertos} / ${total}</span><small>${esc(porcentajeTxt(pct))}</small></div>
+                                <div class="nota-barra"><span class="${supera ? 'ok' : 'ko'}" style="width: ${Math.max(0, Math.min(100, pct))}%;"></span></div>
+                            </div>`;
+                const recuento = sinTest
+                    ? `<span style="color: var(--text-muted);">—</span>`
+                    : `<span class="recuento">
+                                <span class="v"><i class="fa-solid fa-check"></i> ${aciertos}</span>
+                                <span class="r"><i class="fa-solid fa-xmark"></i> ${fallos}</span>
+                            </span>`;
+                const ver = sinTest ? '' : `<button class="action-icon-btn" onclick="openFichaModal(${idArg})" title="Ver respuestas" aria-label="Ver respuestas"><i class="fa-solid fa-eye"></i></button>`;
+
+                return `
+                    <tr>
+                        <td><strong>#${esc(w.id)}</strong></td>
+                        <td>
+                            <div style="font-weight: 600; color: #fff;">${esc(w.usuario || 'Usuario')}</div>
+                            <small style="color: var(--text-muted); font-size: 11px;">ID: ${esc(w.discordId || 'N/A')}</small>
+                        </td>
+                        <td>${nota}</td>
+                        <td>${recuento}</td>
+                        <td style="color: var(--text-muted);">${sinTest ? '—' : esc(w.numeroIntento || 1) + '.º'}</td>
+                        <td style="color: var(--text-muted); white-space: nowrap;">${esc(fechaLarga(w.fechaRegistro))}</td>
+                        <td>
+                            <span class="badge-status ${est.clase}">${est.texto}</span>${est.manual ? `<span class="badge-manual" title="Cambiado a mano por ${esc(w.revisadoPor.usuario || 'staff')}"><i class="fa-solid fa-user-pen"></i> manual</span>` : ''}
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="action-btns-group" style="justify-content: flex-end;">
+                                ${ver}
+                                ${accion}
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        /* =====================================================================
+           ÚLTIMAS WHITELIST OTORGADAS
+           Salen de la misma lista de /api/whitelist: todos los registros con
+           estado "Aprobado".
+             - Por test: la corrección automática la aprobó (no hay "revisadoPor").
+             - A mano:   la entregó un miembro del staff ("revisadoPor"), con o
+                         sin test previo. Se muestra quién la entrega, quién la
+                         recibe, sus IDs de Discord y el motivo.
+           ===================================================================== */
+        const OT_POR_PAGINA = 6;
+        let otFiltro = 'todas';             // todas | auto | manual
+        let otVisibles = OT_POR_PAGINA;
+        let otFirma = null;                 // para no repintar (ni volver a animar) si no hay cambios
+        let otResaltar = null;              // id de la whitelist que se acaba de otorgar
+        const otVistas = new Set();         // tarjetas que ya han hecho su animación de entrada
+
+        const iniciales = nombre => (String(nombre || '').trim().slice(0, 2) || '?').toUpperCase();
+
+        // Color del avatar: siempre el mismo para la misma persona
+        function tonoDe(texto) {
+            let h = 0;
+            for (const c of String(texto || '')) h = (h * 31 + c.charCodeAt(0)) % 360;
+            return h;
+        }
+
+        function avatarHtml(nombre, id, url) {
+            return url
+                ? `<span class="ot-avatar"><img src="${esc(url)}" alt=""></span>`
+                : `<span class="ot-avatar" style="--h: ${tonoDe(id || nombre)};">${esc(iniciales(nombre))}</span>`;
+        }
+
+        // ID de Discord. Si es "copiable", al pulsarlo se copia.
+        function idHtml(id, copiable, textoSinId) {
+            if (!id) return `<span class="ot-id sin">${esc(textoSinId || 'ID no registrado')}</span>`;
+            return copiable
+                ? `<button type="button" class="ot-id" data-copiar="${esc(id)}" title="Copiar ID de Discord"><i class="fa-regular fa-copy"></i> ${esc(id)}</button>`
+                : `<span class="ot-id" style="cursor: default;">${esc(id)}</span>`;
+        }
+
+        function personaHtml(rol, nombre, id, avatar, copiable, textoSinNombre, textoSinId) {
+            return `
+                <div class="ot-persona">
+                    ${avatarHtml(nombre, id, avatar)}
+                    <div>
+                        <small>${rol}</small>
+                        <b class="${nombre ? '' : 'vacio'}">${esc(nombre || textoSinNombre || 'Sin nombre')}</b>
+                        ${idHtml(id, copiable, textoSinId)}
+                    </div>
+                </div>`;
+        }
+
+        const FLECHA_HTML = `<div class="ot-flecha" aria-hidden="true"><i class="fa-solid fa-key"></i></div>`;
+
+        function listaOtorgadas() {
+            return whitelistList
+                .filter(w => w.status === 'Aprobado')
+                .map(w => ({ w, manual: !!w.revisadoPor, fecha: (w.revisadoPor && w.fechaRevision) || w.fechaRegistro }))
+                .sort((a, b) => (new Date(b.fecha).getTime() || 0) - (new Date(a.fecha).getTime() || 0));
+        }
+
+        function tarjetaOtorgada(o, clases, i) {
+            const w = o.w;
+            const id = esc(w.id);
+            const total = Number(w.total) || 0;
+            const aciertos = Number(w.aciertos) || 0;
+            const fallos = Number(w.fallos) || 0;
+            const pct = Math.max(0, Math.min(100, Number(w.porcentaje) || 0));
+            const conTest = total > 0;
+
+            const ver = conTest ? `<button type="button" class="action-icon-btn" data-ver="${id}" title="Ver respuestas del test" aria-label="Ver respuestas del test"><i class="fa-solid fa-eye"></i></button>` : '';
+            const retirar = `<button type="button" class="action-icon-btn reject-btn" data-retirar="${id}" title="Retirar la whitelist" aria-label="Retirar la whitelist"><i class="fa-solid fa-xmark"></i></button>`;
+
+            if (!o.manual) {
+                // Aprobada por la corrección automática del test
+                const duracion = Number(w.duracionSeg) > 0 ? `<span><i class="fa-regular fa-clock"></i> ${esc(duracionTxt(w.duracionSeg))}</span>` : '';
+                return `
+                    <article class="ot-card auto ${clases}" style="--i: ${i};" data-id="${id}">
+                        <div class="ot-anillo" title="${esc(porcentajeTxt(pct))} de acierto">
+                            <svg viewBox="0 0 64 64" aria-hidden="true">
+                                <circle class="pista" cx="32" cy="32" r="27"></circle>
+                                <circle class="valor" cx="32" cy="32" r="27" pathLength="100" style="stroke-dasharray: ${pct} 100;"></circle>
+                            </svg>
+                            <b>${Math.round(pct)}<small>%</small></b>
+                        </div>
+                        <div class="ot-cuerpo">
+                            <div class="ot-cab">
+                                <span class="ot-tipo"><i class="fa-solid fa-graduation-cap"></i> Aprobada en el test</span>
+                                <time>${esc(fechaLarga(o.fecha))}</time>
+                            </div>
+                            <div class="ot-nombre">${esc(w.usuario || 'Usuario')}</div>
+                            ${idHtml(w.discordId, true)}
+                            <div class="ot-datos">
+                                <span><b>${aciertos}</b> de ${total} aciertos</span>
+                                <span><b>${fallos}</b> ${fallos === 1 ? 'fallo' : 'fallos'}</span>
+                                <span>${esc(w.numeroIntento || 1)}.º intento</span>
+                                ${duracion}
+                            </div>
+                        </div>
+                        <div class="ot-acciones">${ver}${retirar}</div>
+                    </article>`;
+            }
+
+            // Entregada a mano por el staff
+            const rev = w.revisadoPor || {};
+            const motivo = String(w.motivo || rev.motivo || '').trim();
+            return `
+                <article class="ot-card manual ${clases}" style="--i: ${i};" data-id="${id}">
+                    <div class="ot-cab">
+                        <span class="ot-tipo"><i class="fa-solid fa-hand-holding-heart"></i> Entregada a mano</span>
+                        <span class="ot-cab-der">
+                            <time>${esc(fechaLarga(o.fecha))}</time>
+                            <span class="ot-acciones">${ver}${retirar}</span>
+                        </span>
+                    </div>
+                    <div class="ot-entrega">
+                        ${personaHtml('Entrega', rev.usuario || 'Staff', rev.discordId || rev.id || '', rev.avatarUrl, true)}
+                        ${FLECHA_HTML}
+                        ${personaHtml('Recibe', w.usuario || 'Usuario', w.discordId || '', w.avatarUrl, true)}
+                    </div>
+                    <div class="ot-motivo ${motivo ? '' : 'vacio'}"><small>Motivo</small>${motivo ? esc(motivo) : 'No se indicó ningún motivo.'}</div>
+                    <div class="ot-datos">
+                        <span>${conTest
+                            ? `En el test sacó <b>${aciertos}</b> de ${total} (${esc(porcentajeTxt(pct))})`
+                            : '<i class="fa-solid fa-ban"></i> Sin hacer el test'}</span>
+                    </div>
+                </article>`;
+        }
+
+        function renderOtorgadas() {
+            const cont = document.getElementById('otLista');
+            if (!cont) return;
+
+            const todas = listaOtorgadas();
+            const nManual = todas.filter(o => o.manual).length;
+            const nAuto = todas.length - nManual;
+            document.getElementById('otNTodas').textContent = todas.length;
+            document.getElementById('otNAuto').textContent = nAuto;
+            document.getElementById('otNManual').textContent = nManual;
+            document.getElementById('otSubtitulo').textContent = todas.length
+                ? `${todas.length} ${todas.length === 1 ? 'usuario tiene' : 'usuarios tienen'} la whitelist: ${nAuto} por aprobar el test y ${nManual} a mano. Las más recientes primero.`
+                : 'Las aprobadas en el test y las entregadas a mano. Las más recientes primero.';
+            otMoverIndicador();
+
+            const lista = todas.filter(o => otFiltro === 'todas' || (otFiltro === 'manual') === o.manual);
+            const visibles = lista.slice(0, otVisibles);
+
+            const quedan = lista.length - visibles.length;
+            document.getElementById('otMas').hidden = quedan <= 0;
+            document.getElementById('otMasBtn').textContent = `Ver ${Math.min(OT_POR_PAGINA, quedan)} más`;
+
+            // Si no ha cambiado nada (refresco automático cada 20 s), no se toca la lista
+            const firma = JSON.stringify([otFiltro, errorDeCarga, visibles.map(o => o.w)]);
+            if (firma === otFirma) return;
+            otFirma = firma;
+
+            if (visibles.length === 0) {
+                cont.innerHTML = `<div class="ot-vacio"><i class="fa-solid fa-key"></i>${errorDeCarga
+                    ? esc(errorDeCarga)
+                    : otFiltro === 'manual' ? 'Todavía no se ha entregado ninguna whitelist a mano.'
+                    : otFiltro === 'auto' ? 'Todavía nadie ha aprobado el test.'
+                    : 'Todavía no se ha otorgado ninguna whitelist.'}</div>`;
+                return;
+            }
+
+            // Solo se animan las tarjetas que aparecen por primera vez, una detrás de otra
+            let orden = 0;
+            cont.innerHTML = visibles.map(o => {
+                const clave = String(o.w.id);
+                if (otVistas.has(clave)) return tarjetaOtorgada(o, '', 0);
+                const clases = 'entra' + (clave === String(otResaltar) ? ' nueva' : '');
+                return tarjetaOtorgada(o, clases, orden++);
+            }).join('');
+            visibles.forEach(o => otVistas.add(String(o.w.id)));
+            otResaltar = null;
+        }
+
+        // El fondo de la pestaña activa se desliza hasta ella
+        function otMoverIndicador() {
+            const activa = document.querySelector('#otTabs .ot-tab.activo');
+            const ind = document.getElementById('otTabInd');
+            if (!activa || !ind) return;
+            ind.style.width = activa.offsetWidth + 'px';
+            ind.style.transform = `translateX(${activa.offsetLeft}px)`;
+        }
+
+        function copiarTexto(texto) {
+            if (!navigator.clipboard) return;
+            navigator.clipboard.writeText(texto).then(() => {
+                showTopNotification("Copiado al portapapeles con éxito.", "COPIADO", true);
+            }).catch(() => {});
+        }
+
+        function initOtorgadas() {
+            document.querySelectorAll('#otTabs .ot-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    if (otFiltro === tab.dataset.ot) return;
+                    otFiltro = tab.dataset.ot;
+                    otVisibles = OT_POR_PAGINA;
+                    document.querySelectorAll('#otTabs .ot-tab').forEach(t => {
+                        t.classList.toggle('activo', t === tab);
+                        t.setAttribute('aria-pressed', t === tab ? 'true' : 'false');
+                    });
+                    otVistas.clear();       // al cambiar de pestaña las tarjetas vuelven a entrar animadas
+                    renderOtorgadas();
+                });
+            });
+            document.getElementById('otMasBtn').addEventListener('click', () => {
+                otVisibles += OT_POR_PAGINA;
+                renderOtorgadas();
+            });
+            document.getElementById('otLista').addEventListener('click', (e) => {
+                const copiar = e.target.closest('[data-copiar]');
+                if (copiar) { copiarTexto(copiar.dataset.copiar); return; }
+                const ver = e.target.closest('[data-ver]');
+                if (ver) { openFichaModal(ver.dataset.ver); return; }
+                const retirar = e.target.closest('[data-retirar]');
+                if (retirar) changeStatus(retirar.dataset.retirar, 'Rechazado');
+            });
+            window.addEventListener('resize', otMoverIndicador);
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(otMoverIndicador);
+        }
+
+        /* =====================================================================
+           GESTIONAR WHITELIST: otorgarla a mano
+           - Si el usuario ya tiene algún intento del test (suspendido), se aprueba
+             ese intento con /api/whitelist/estado, enviando también el motivo.
+           - Si NO ha hecho el test, se pide al servidor que le cree la whitelist
+             con /api/whitelist/otorgar  { discordId, usuario, motivo }.
+             El servidor debe devolver el registro creado, con el mismo formato
+             que los demás: { id, usuario, discordId, status: 'Aprobado',
+             fechaRegistro, fechaRevision, motivo, sinTest: true,
+             revisadoPor: { usuario, discordId } }.
+           ===================================================================== */
+        const gw = { abierta: false, intentoId: null, enviando: false, nombreAuto: false, cierre: null, estadoHtml: '' };
+
+        // Motivos habituales: al pulsar uno se escribe en la caja (y se puede retocar)
+        const GW_MOTIVOS = [
+            'Miembro del staff',
+            'Creador de contenido',
+            'Invitado por la dirección',
+            'Ya tenía la whitelist antes del test'
+        ];
+
+        const idDiscordValido = id => /^\d{17,20}$/.test(id);
+        const intentosDe = id => whitelistList.filter(w => String(w.discordId) === String(id));
+        const gwEl = id => document.getElementById(id);
+
+        function initGestion() {
+            gwEl('gwChips').innerHTML = GW_MOTIVOS.map(m => `<button type="button" class="gw-chip" data-motivo="${esc(m)}">${esc(m)}</button>`).join('');
+
+            gwEl('gwNombre').addEventListener('input', () => { gw.nombreAuto = false; gwActualizar(); });
+            gwEl('gwId').addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                gwActualizar();
+            });
+            gwEl('gwMotivo').addEventListener('input', gwActualizar);
+
+            gwEl('gestionModal').addEventListener('click', (e) => {
+                if (e.target.id === 'gestionModal') { cerrarGestion(); return; }
+                const chip = e.target.closest('[data-motivo]');
+                if (chip) {
+                    const caja = gwEl('gwMotivo');
+                    caja.value = chip.dataset.motivo;
+                    caja.focus();
+                    gwActualizar();
+                    return;
+                }
+                const retirar = e.target.closest('[data-gw-retirar]');
+                if (retirar) changeStatus(retirar.dataset.gwRetirar, 'Rechazado');
+            });
+        }
+
+        // intentoId: si se abre desde el botón ✓ de un intento suspendido, el usuario ya viene puesto
+        function abrirGestion(intentoId) {
+            clearTimeout(gw.cierre);
+            gw.intentoId = null;
+            gw.enviando = false;
+            gw.nombreAuto = false;
+            gw.estadoHtml = '';
+
+            const nombre = gwEl('gwNombre'), idInput = gwEl('gwId'), motivo = gwEl('gwMotivo');
+            nombre.value = ''; idInput.value = ''; motivo.value = '';
+            nombre.readOnly = false; idInput.readOnly = false;
+            [nombre, idInput, motivo].forEach(c => c.classList.remove('mal'));
+            gwEl('gwForm').hidden = false;
+            gwEl('gwExito').hidden = true;
+            gwEl('gwError').hidden = true;
+            gwEl('gwPreview').classList.remove('hecho');
+            gwCargando(false);
+
+            const w = (intentoId !== undefined && intentoId !== null)
+                ? whitelistList.find(item => String(item.id) === String(intentoId)) : null;
+            if (w) {
+                gw.intentoId = w.id;
+                nombre.value = w.usuario || '';
+                idInput.value = w.discordId || '';
+                nombre.readOnly = true; idInput.readOnly = true;
+                gwEl('gwTituloTexto').textContent = 'Otorgar whitelist a mano';
+                gwEl('gwSubtitulo').textContent = 'Este usuario no ha superado el test. Si se la das, quedará registrado quién la entrega y por qué.';
+            } else {
+                gwEl('gwTituloTexto').textContent = 'Gestionar whitelist';
+                gwEl('gwSubtitulo').textContent = 'Dale la whitelist a alguien aunque no haya hecho el test. Quedará registrado quién la entrega y por qué.';
+            }
+
+            gw.abierta = true;
+            gwActualizar();
+            gwEl('gwEstado').classList.remove('cambia');   // al abrir entra con el resto de campos
+            gwEl('gestionModal').classList.add('active');
+            setTimeout(() => (w ? motivo : nombre).focus(), 120);
+        }
+
+        function cerrarGestion() {
+            if (gw.enviando) return;      // no se cierra a mitad del envío
+            clearTimeout(gw.cierre);
+            gw.abierta = false;
+            gwEl('gestionModal').classList.remove('active');
+        }
+
+        // Refresca la vista previa (quién entrega -> quién recibe) y lo que se sabe del usuario
+        function gwActualizar() {
+            const nombreInput = gwEl('gwNombre'), idInput = gwEl('gwId'), motivoInput = gwEl('gwMotivo');
+            const id = idInput.value.trim();
+            const suyos = idDiscordValido(id) ? intentosDe(id) : [];
+
+            // Si ya se conoce a ese usuario, se rellena su nombre
+            if (suyos.length && !nombreInput.readOnly && (!nombreInput.value.trim() || gw.nombreAuto)) {
+                const conocido = suyos.find(w => w.usuario);
+                if (conocido) { nombreInput.value = conocido.usuario; gw.nombreAuto = true; }
+            }
+            const nombre = nombreInput.value.trim();
+
+            const staff = yo();
+            gwEl('gwPreview').innerHTML =
+                personaHtml('Entrega', staff.nombre, staff.id, staff.avatar, false, '', 'ID no disponible')
+                + FLECHA_HTML
+                + personaHtml('Recibe', nombre, id, '', false, 'Nombre de Discord', 'ID de Discord');
+
+            gwEl('gwContador').textContent = `${motivoInput.value.length} / 300`;
+
+            // Qué se sabe de ese usuario
+            const aprobado = suyos.find(w => w.status === 'Aprobado');
+            let clase = '', icono = 'fa-circle-info', html;
+            if (!id) {
+                html = 'Escribe el ID de Discord para comprobar si ese usuario ya tiene la whitelist.';
+            } else if (!idDiscordValido(id)) {
+                clase = 'aviso'; icono = 'fa-triangle-exclamation';
+                html = 'El ID de Discord tiene entre 17 y 20 números.';
+            } else if (aprobado) {
+                clase = 'ok'; icono = 'fa-circle-check';
+                const rev = aprobado.revisadoPor;
+                const como = rev
+                    ? `Se la entregó a mano <strong>${esc(rev.usuario || 'el staff')}</strong> el ${esc(fechaLarga(aprobado.fechaRevision || aprobado.fechaRegistro))}.`
+                    : `La aprobó en el test con <strong>${esc(aprobado.aciertos)} de ${esc(aprobado.total)}</strong> aciertos el ${esc(fechaLarga(aprobado.fechaRegistro))}.`;
+                html = `<strong>${esc(aprobado.usuario || 'Este usuario')} ya tiene la whitelist.</strong> ${como}<br>
+                    <button type="button" class="gw-retirar" data-gw-retirar="${esc(aprobado.id)}"><i class="fa-solid fa-user-slash"></i> Retirar la whitelist</button>`;
+            } else if (suyos.length) {
+                clase = 'aviso'; icono = 'fa-clipboard-question';
+                const reales = suyos.filter(w => !esSinTest(w));
+                if (reales.length) {
+                    const mejor = reales.reduce((a, b) => (Number(b.porcentaje) || 0) > (Number(a.porcentaje) || 0) ? b : a);
+                    html = `Ha hecho el test <strong>${reales.length} ${reales.length === 1 ? 'vez' : 'veces'}</strong> sin aprobarlo. Su mejor resultado: <strong>${esc(mejor.aciertos)} de ${esc(mejor.total)}</strong> (${esc(porcentajeTxt(mejor.porcentaje))}).`;
+                } else {
+                    html = 'Tuvo la whitelist entregada a mano y se le retiró.';
+                }
+            } else {
+                html = 'No ha hecho el test. Se le dará la whitelist directamente.';
+            }
+
+            // El aviso solo se repinta (con su pequeña animación) cuando cambia
+            const estado = gwEl('gwEstado');
+            const nuevoHtml = clase + '|' + html;
+            if (nuevoHtml !== gw.estadoHtml) {
+                gw.estadoHtml = nuevoHtml;
+                estado.className = 'gw-estado gw-anim ' + clase;
+                estado.innerHTML = `<i class="fa-solid ${icono}"></i><div>${html}</div>`;
+                void estado.offsetWidth;
+                estado.classList.add('cambia');
+            }
+
+            // Si ya la tiene no hay nada que otorgar: se esconde el motivo y se bloquea el botón
+            gwEl('gwMotivoCampo').hidden = !!aprobado;
+            if (!gw.enviando) gwEl('gwEnviarBtn').disabled = !!aprobado;
+        }
+
+        function gwCargando(activo) {
+            const btn = gwEl('gwEnviarBtn');
+            btn.classList.toggle('cargando', activo);
+            btn.disabled = activo;
+            btn.innerHTML = activo
+                ? `<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Otorgando...</span>`
+                : `<i class="fa-solid fa-key"></i> <span>Otorgar whitelist</span>`;
+        }
+
+        function gwMostrarError(texto, campo) {
+            const caja = gwEl('gwError');
+            caja.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>${esc(texto)}</span>`;
+            caja.hidden = true;
+            void caja.offsetWidth;        // reinicia la animación si ya estaba visible
+            caja.hidden = false;
+            if (campo) { campo.classList.add('mal'); campo.focus(); }
+        }
+
+        function gwMotivoError(status, sinIntentos) {
+            if ((status === 404 || status === 405) && sinIntentos) {
+                return 'El servidor todavía no sabe dar la whitelist a quien no ha hecho el test: falta añadir la ruta /api/whitelist/otorgar en whitelist_api.py.';
+            }
+            if (status === 409) return 'Ese usuario ya tiene la whitelist aprobada.';
+            if (status === 400 || status === 422) return 'El servidor no ha aceptado los datos. Revisa el nombre, el ID de Discord y el motivo.';
+            return motivoError(status);
+        }
+
+        async function gwEnviar(event) {
+            event.preventDefault();
+            if (gw.enviando) return;
+
+            const nombreInput = gwEl('gwNombre'), idInput = gwEl('gwId'), motivoInput = gwEl('gwMotivo');
+            const nombre = nombreInput.value.trim();
+            const id = idInput.value.trim();
+            const motivo = motivoInput.value.trim();
+            [nombreInput, idInput, motivoInput].forEach(c => c.classList.remove('mal'));
+            gwEl('gwError').hidden = true;
+
+            if (!nombre) return gwMostrarError('Escribe el nombre de Discord de quien recibe la whitelist.', nombreInput);
+            if (!idDiscordValido(id)) return gwMostrarError('El ID de Discord no es válido: tiene que tener entre 17 y 20 números.', idInput);
+            const suyos = intentosDe(id);
+            if (suyos.some(w => w.status === 'Aprobado')) return gwMostrarError('Ese usuario ya tiene la whitelist.');
+            if (motivo.length < 5) return gwMostrarError('Escribe el motivo por el que se le entrega la whitelist.', motivoInput);
+
+            // Registro sobre el que se aprueba: el intento elegido o, si no, el más reciente de ese usuario
+            const base = gw.intentoId !== null
+                ? whitelistList.find(w => String(w.id) === String(gw.intentoId))
+                : suyos.slice().sort((a, b) => (new Date(b.fechaRegistro).getTime() || 0) - (new Date(a.fechaRegistro).getTime() || 0))[0];
+
+            gw.enviando = true;
+            gwCargando(true);
+
+            try {
+                const r = await fetch(base ? '/api/whitelist/estado' : '/api/whitelist/otorgar', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(base
+                        ? { id: base.id, status: 'Aprobado', motivo }
+                        : { discordId: id, usuario: nombre, motivo })
+                });
+                if (!r.ok) throw new Error(gwMotivoError(r.status, !base));
+
+                let registro = null;
+                try { registro = await r.json(); } catch (e) {}
+                if (!registro || typeof registro !== 'object') registro = {};
+                if (base) {
+                    Object.assign(base, registro);
+                    registro = base;
+                } else {
+                    if (registro.id === undefined || registro.id === null) throw new Error('El servidor ha respondido, pero no ha devuelto la whitelist creada.');
+                    whitelistList.unshift(registro);
+                }
+
+                gw.enviando = false;
+                const motivoGuardado = !!String(registro.motivo || (registro.revisadoPor || {}).motivo || '').trim();
+                gwMostrarExito(nombre, motivoGuardado);
+
+                // La tarjeta nueva entra animada y resaltada en "Últimas whitelist otorgadas"
+                otResaltar = registro.id;
+                otVistas.delete(String(registro.id));
+                renderTableData();
+                updateMetrics();
+                renderOtorgadas();
+            } catch (e) {
+                console.error("Error al otorgar la whitelist:", e);
+                gw.enviando = false;
+                gwCargando(false);
+                gwMostrarError(e.message === 'Failed to fetch' ? 'No se ha podido conectar con el servidor.' : e.message);
+            }
+        }
+
+        function gwMostrarExito(nombre, motivoGuardado) {
+            gwEl('gwForm').hidden = true;
+            gwEl('gwPreview').classList.add('hecho');
+            const caja = gwEl('gwExito');
+            caja.innerHTML = `
+                <div class="gw-check">
+                    <svg viewBox="0 0 80 80" aria-hidden="true">
+                        <circle cx="40" cy="40" r="34"></circle>
+                        <path d="M25 41 l10 10 l20 -22"></path>
+                    </svg>
+                </div>
+                <h4>Whitelist otorgada</h4>
+                <p><strong>${esc(nombre)}</strong> ya tiene acceso a la ciudad. Ha quedado registrado que se la has entregado tú.</p>
+                ${motivoGuardado ? '' : `<p class="gw-aviso-servidor"><i class="fa-solid fa-triangle-exclamation"></i> El servidor todavía no guarda el motivo de la entrega: hay que añadirlo en whitelist_api.py.</p>`}`;
+            caja.hidden = false;
+            gw.cierre = setTimeout(cerrarGestion, motivoGuardado ? 2400 : 6500);
+        }
+
+        /* ---------- Detalle de un intento: pregunta a pregunta ---------- */
+        let fichaToken = 0;
+
+        async function openFichaModal(id) {
+            const miToken = ++fichaToken;
+            const container = document.getElementById('fichaContentContainer');
+            document.getElementById('fichaTituloTexto').textContent = 'Intento #' + id;
+            container.innerHTML = `<div class="det-cargando"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando respuestas...</div>`;
+            document.getElementById('fichaModal').classList.add('active');
+
+            let w;
+            try {
+                const r = await fetch('/api/whitelist/detalle?id=' + encodeURIComponent(id), { cache: 'no-store', credentials: 'same-origin' });
+                if (!r.ok) throw new Error(motivoError(r.status));
+                w = await r.json();
+            } catch (e) {
+                if (miToken !== fichaToken) return;
+                container.innerHTML = `<div class="det-cargando"><i class="fa-solid fa-triangle-exclamation" style="color: var(--ambar);"></i> ${esc(e.message === 'Failed to fetch' ? 'No se ha podido conectar con el servidor.' : e.message)}</div>`;
+                return;
+            }
+            if (miToken !== fichaToken) return;
+
+            const est = estadoDe(w);
+            const respuestas = Array.isArray(w.respuestas) ? w.respuestas : [];
+            const acertadas = respuestas.filter(r => r.acierto).length;
+            const falladas = respuestas.length - acertadas;
+
+            const motivoManual = String(w.motivo || (w.revisadoPor || {}).motivo || '').trim();
+            const origen = w.revisadoPor
+                ? `Cambiado a mano por ${esc(w.revisadoPor.usuario || 'staff')} el ${esc(fechaLarga(w.fechaRevision))}.${motivoManual ? ` Motivo: ${esc(motivoManual)}.` : ''} La corrección automática fue: ${w.statusAuto === 'Aprobado' ? 'aprobado' : 'suspendido'}.`
+                : 'Corrección automática';
+
+            const bloques = Object.values(w.bloques || {}).filter(b => b && b.total).map(b => {
+                const pct = b.total ? b.aciertos * 100 / b.total : 0;
+                return `
+                    <div class="det-bloque">
+                        <span>${esc(b.nombre)}</span>
+                        <div class="nota-barra"><span class="${pct >= (Number(w.minimoPorcentaje) || 60) ? 'ok' : 'ko'}" style="width: ${pct}%;"></span></div>
+                        <b>${esc(b.aciertos)} / ${esc(b.total)}</b>
+                    </div>`;
+            }).join('');
+
+            const opcionTxt = (r, letra) => letra
+                ? `<strong>${esc(letra)})</strong> ${esc((r.opciones || {})[letra] || '')}`
+                : 'Sin responder';
+
+            const lista = respuestas.map(r => `
+                <div class="det-item ${r.acierto ? 'ok' : 'ko'}" data-acierto="${r.acierto ? '1' : '0'}">
+                    <div class="det-num"><i class="fa-solid ${r.acierto ? 'fa-check' : 'fa-xmark'}"></i>${esc(r.n)}</div>
+                    <div>
+                        <div class="det-tema">${esc(r.bloqueNombre)}${r.tema ? `, tema ${esc(r.tema)}: ${esc(r.titulo)}` : ''}</div>
+                        <div class="det-enun">${esc(r.enunciado)}</div>
+                        <div class="det-resp ${r.acierto ? 'bien' : 'mal'}"><span>Respondió</span><div>${opcionTxt(r, r.elegida)}</div></div>
+                        ${r.acierto ? '' : `<div class="det-resp bien"><span>Correcta</span><div>${opcionTxt(r, r.correcta)}</div></div>`}
+                    </div>
+                </div>`).join('');
+
+            container.innerHTML = `
+                <div class="det-resumen">
+                    <div class="det-campo"><span>Usuario de Discord</span><b>${esc(w.usuario || 'Usuario')}</b></div>
+                    <div class="det-campo"><span>ID de Discord</span><b><span id="copyDiscordId">${esc(w.discordId || 'N/A')}</span><button class="copy-mini" onclick="copyText('copyDiscordId')" title="Copiar ID" aria-label="Copiar ID de Discord"><i class="fa-solid fa-copy"></i></button></b></div>
+                    <div class="det-campo"><span>Nota</span><b>${esc(w.aciertos)} / ${esc(w.total)} (${esc(porcentajeTxt(w.porcentaje))})</b><small>Mínimo para aprobar: ${esc(w.minimoAciertos)} aciertos</small></div>
+                    <div class="det-campo"><span>Aciertos y fallos</span><b><span class="recuento"><span class="v"><i class="fa-solid fa-check"></i> ${esc(w.aciertos)}</span><span class="r"><i class="fa-solid fa-xmark"></i> ${esc(w.fallos)}</span></span></b>${Number(w.sinResponder) ? `<small>${esc(w.sinResponder)} sin responder</small>` : ''}</div>
+                    <div class="det-campo"><span>Estado</span><b><span class="badge-status ${est.clase}">${est.texto}</span></b></div>
+                    <div class="det-campo"><span>Fecha</span><b>${esc(fechaLarga(w.fechaRegistro))}</b><small>Horario peninsular</small></div>
+                    <div class="det-campo"><span>Tiempo empleado</span><b>${esc(duracionTxt(w.duracionSeg))}</b></div>
+                    <div class="det-campo"><span>Intento del usuario</span><b>${esc(w.numeroIntento || 1)}.º</b></div>
+                </div>
+                <p class="det-nota">${origen}</p>
+
+                <div class="det-titulo">Resultado por bloque</div>
+                ${bloques || '<p class="det-nota">Sin datos por bloque.</p>'}
+
+                <div class="det-titulo">Respuestas</div>
+                <div class="det-filtros">
+                    <button class="det-filtro activo" data-filtro="todas">Todas (${respuestas.length})</button>
+                    <button class="det-filtro" data-filtro="0">Falladas (${falladas})</button>
+                    <button class="det-filtro" data-filtro="1">Acertadas (${acertadas})</button>
+                </div>
+                <p class="det-nota">Las letras son las del banco de preguntas. Al usuario las opciones se le muestran en orden aleatorio.</p>
+                <div id="detLista">${lista || '<p class="det-nota">Este intento no tiene respuestas registradas.</p>'}</div>`;
+
+            container.querySelectorAll('.det-filtro').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    container.querySelectorAll('.det-filtro').forEach(b => b.classList.toggle('activo', b === btn));
+                    const f = btn.dataset.filtro;
+                    container.querySelectorAll('.det-item').forEach(it => { it.hidden = f !== 'todas' && it.dataset.acierto !== f; });
+                });
+            });
+        }
+
+        function closeFichaModal() {
+            fichaToken++;
+            document.getElementById('fichaModal').classList.remove('active');
+        }
+
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showTopNotification("Copiado al portapapeles con éxito.", "COPIADO", true);
+            });
+        }
+
+        /* ---------- Otorgar o retirar a mano ---------- */
+        // Otorgar: abre la ventana de gestión, que pide el motivo.
+        // Retirar: pide confirmación y lo guarda en el servidor.
+        async function changeStatus(id, newStatus) {
+            const w = whitelistList.find(item => String(item.id) === String(id));
+            if (!w) return;
+
+            if (newStatus === 'Aprobado') {
+                abrirGestion(w.id);
+                return;
+            }
+
+            const pregunta = `¿Retirar la whitelist a ${w.usuario}?\n\nPerderá el acceso y tendrá que volver a hacer el test. Quedará registrado que lo has cambiado tú.`;
+            if (!confirm(pregunta)) return;
+
+            try {
+                const r = await fetch('/api/whitelist/estado', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: w.id, status: newStatus })
+                });
+                if (!r.ok) throw new Error(motivoError(r.status));
+                const actualizado = await r.json();
+                Object.assign(w, actualizado);
+            } catch (e) {
+                console.error("Error al cambiar el estado de la whitelist:", e);
+                showTopNotification(`<strong>No se ha guardado.</strong> ${esc(e.message === 'Failed to fetch' ? 'No se ha podido conectar con el servidor.' : e.message)}`, 'ERROR', false);
+                return;
+            }
+
+            pintarTodo();
+            showTopNotification(`Se le ha retirado la whitelist a <strong>${esc(w.usuario || 'ese usuario')}</strong>`, 'RETIRADA', false);
+        }
+
+        let notifHideTimer = null;
+
+        function showTopNotification(htmlMessage, tagText, isSuccess = true) {
+            const notif = document.getElementById('successNotification');
+            const textElem = document.getElementById('successNotificationText');
+            const tagElem = document.getElementById('successNotificationTag');
+            const iconBadge = document.getElementById('successIconBadge');
+            const iconElem = document.getElementById('successIconElement');
+
+            textElem.innerHTML = htmlMessage;
+            tagElem.innerText = tagText;
+
+            if (isSuccess) {
+                iconBadge.style.background = "rgba(16, 185, 129, 0.15)";
+                iconBadge.style.color = "#10b981";
+                iconElem.className = "fa-solid fa-check";
+            } else {
+                iconBadge.style.background = "rgba(239, 68, 68, 0.15)";
+                iconBadge.style.color = "#ef4444";
+                iconElem.className = "fa-solid fa-xmark";
+            }
+
+            clearTimeout(notifHideTimer);
+            notif.classList.remove('hide');
+            notif.classList.add('show');
+            notifHideTimer = setTimeout(() => {
+                notif.classList.remove('show');
+                notif.classList.add('hide');
+            }, tagText === 'ERROR' ? 6000 : 3000);
+        }
+    </script>
+    <script src="/src/views/permissions.js"></script>
+</body>
+</html>
